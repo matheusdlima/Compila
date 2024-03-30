@@ -1,0 +1,25 @@
+false_aa
+testee_aa
+false
+int a;
+
+"aa \"" // string certa
+
+int "ss
+
+"teste\n" // string certa
+
+teste 1 1.1 1. .1
+
+// comentario
+
+"kkk\n\" //string e erro
+
+/*
+'c'
+
+False */
+
+true
+
+Fals

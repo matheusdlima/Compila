@@ -1,10 +1,10 @@
 #  Etapa 1 - Compiladores 2024/1
 #      Autor: Matheus Lima 
 
-etapa1: lex.yy.o main.o hash.o
-	gcc -o etapa1 lex.yy.o main.o hash.o 
-main.o: main.c
-	gcc -c main.c
+etapa1: lex.yy.o main_prof.o hash.o
+	gcc -o etapa1 lex.yy.o main_prof.o hash.o 
+main_prof.o: main_prof.c
+	gcc -c main_prof.c
 hash.o: hash.c
 	gcc -c hash.c
 lex.yy.o: lex.yy.c

@@ -1,24 +1,21 @@
 %{
     //  Etapa 1 - Compiladores 2024/1
-    //      Matheus Lima                   
-    
-    //#include "main.c"
+    //      Autor: Matheus Lima                   
+
     #include "tokens.h"
+    #include "hash.h"
 
-    int running = 1;
-/* identifier  { return TK_IDENTIFIER; } 
-
- { return LIT_INT; } 
- { return LIT_CHAR; } 
- { return LIT_REAL; } 
- { return LIT_FALSE; } 
- { return LIT_TRUE; } 
- { return LIT_STRING; } */
+    int Running     = 1;
+    int lineNumber  = 1;
 %}
 
 alfa        [A-Za-z_]
 alfanumeric [a-zA-Z0-9_]+
+numeric     [0-9]+
 identifier  {alfa}({alfanumeric}*)
+string      \"([^"\n]|\\.)*[^\\]\"
+
+%x COMMENT
 
 %%
 
@@ -34,42 +31,50 @@ read    { return KW_READ; }
 print   { return KW_PRINT; } 
 return  { return KW_RETURN; } 
      
-[-+*/,;:()][{}%<>&|~=]  { return yytext[0]; }
+[-+*/,;:()\[\]{}%<>&|~=]  { return yytext[0]; }
 
 "<="      { return OPERATOR_LE; } 
 ">="      { return OPERATOR_GE; } 
 "=="      { return OPERATOR_EQ; } 
 "!="      { return OPERATOR_DIF; } 
 
+"false"                                         { hashInsert(yytext, LIT_FALSE); return LIT_FALSE; } 
+"true"                                          { hashInsert(yytext, LIT_TRUE); return LIT_TRUE; } 
+
+{identifier}                                    { hashInsert(yytext, TK_IDENTIFIER); return TK_IDENTIFIER; } 
+
+{numeric}                                       { hashInsert(yytext, LIT_INT); return LIT_INT; } 
+'.'                                             { hashInsert(yytext, LIT_CHAR); return LIT_CHAR; } 
+{numeric}+\.{numeric}*|{numeric}*\.{numeric}+   { hashInsert(yytext, LIT_REAL); return LIT_REAL; } 
+{string}                                        { hashInsert(yytext, LIT_STRING); return LIT_STRING; }
+
 [ \t]
+"\n"   { lineNumber ++; }
+
+"//".*
+"/*"        { BEGIN(COMMENT); }
 
 . { return TOKEN_ERROR; } 
 
-
-
+<COMMENT>"*/"  { BEGIN(INITIAL); }
+<COMMENT>"\n"  { lineNumber ++; }
+<COMMENT>.
 
 %%
 
-int main (int argc, char **argv){
-int tok;
-
-while (running){
-    tok = yylex();
-    if (running == 0) break;
-
-    switch (tok){
-        case KW_INT: printf("Encontrei KW_INT\n"); break;
-        case KW_FLOAT: printf("Encontrei KW_FLOAT\n"); break;
-        case TOKEN_ERROR: printf("ERROR\n"); break;
-        default: printf("Encontrei %c\n", yytext[0]); break;
-    }
+int isRunning(void){
+	return Running;
 }
 
-printf("Main done!\n");
+int getLineNumber(void){
+	return lineNumber;
+}
 
+void initMe(void){
+    hashInit();
 }
 
 int yywrap(){
-    running = 0;
+    Running = 0;
     return 1;
 }
