@@ -6,6 +6,14 @@
 
 #define HASH_SIZE 997
 
+#define SYMBOL_LIT_INTEGER   1
+#define SYMBOL_LIT_REAL      2
+#define SYMBOL_LIT_CHAR      3
+#define SYMBOL_LIT_STRING    4
+#define SYMBOL_LIT_LIT_FALSE 5
+#define SYMBOL_LIT_LIT_TRUE  6
+#define SYMBOL_IDENTIFIER    7
+
 typedef struct hash_node{
     int type;
     char *text;

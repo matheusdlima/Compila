@@ -20,6 +20,7 @@ int main ()
   {
   number = 0;
   d = d - i;
+  d = 5;
   v[d] = 55;
   print int v[5];
   print int d;
@@ -38,4 +39,28 @@ int main ()
   print "Dobrando algumas vezes d fica ";
   print int d;
   print "\n";
+
+  if (a==15)
+    {
+    a = a + 1;
+    print "A era=15\n";
+    };
+    
+  if (i==100)
+    {
+    print "Nao tem como isso...\n";
+    }
+  else
+    print "OK!\n"; 
+  {{}} {}
   }
+
+int incn (int x, int n )
+  {
+  return x + n;
+  }
+
+// end of file
+  
+
+

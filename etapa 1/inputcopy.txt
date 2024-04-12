@@ -28,14 +28,4 @@ int main ()
 
   print "Digite um numero: \n";
   read int d;
-
-  while (i<10)
-    {
-    i = incn(i,1);
-    d = incn(d,d);
-    }
-
-  print "Dobrando algumas vezes d fica ";
-  print int d;
-  print "\n";
   }

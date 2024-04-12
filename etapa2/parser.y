@@ -38,45 +38,127 @@
 
 %token TOKEN_ERROR
 
-%%
+%left '|' '&' '~'
+%left '<' '>' OPERATOR_LE OPERATOR_GE OPERATOR_EQ OPERATOR_DIF
+%left '+' '-'
+%left '*' '/'
 
-programa:  decl
-        ;
-        
-decl: dec resto
-    |
+%start program
+
+%%
+// Utils
+tipo: KW_CHAR 
+    | KW_INT  
+    | KW_FLOAT
+    | KW_BOOL 
     ;
 
-resto: ',' dec resto
+literal:  LIT_INT   
+        | LIT_CHAR  
+        | LIT_REAL  
+        | LIT_FALSE 
+        | LIT_TRUE
+        ;
+
+// Program
+program: decList
+        ;
+        
+decList: decGlobal tail
+        |
+        ;
+
+decGlobal: decGlobalVar ';'
+        | decGlobalVec ';'
+        | decFunc
+        ;
+
+tail: decGlobal tail
     | 
     ;
 
-dec: KW_INT TK_IDENTIFIER
-   |  KW_INT TK_IDENTIFIER '(' ')' body
-        
-        
-body: '{' lcmd '}'
-    ; 
+decGlobalVar: tipo TK_IDENTIFIER ':' literal 
+        ;
 
-lcmd: cmd lcmd
+decGlobalVec: tipo TK_IDENTIFIER '[' LIT_INT ']' initVec 
+            ;
+
+initVec: ':' literal litList
+        |
+        ;
+
+litList: literal litList
+        |
+        ;
+
+decFunc: tipo TK_IDENTIFIER '(' paramList ')' cmdBlock
+        ;
+        
+paramList: param paramEnd
+        |
+        ;
+
+paramEnd : ',' param paramEnd
+        |
+        ;
+
+param: tipo TK_IDENTIFIER
+      ;
+
+cmdBlock: '{' lCmd '}'
+        ; 
+
+lCmd: cmd lCTail
+    ;
+
+lCTail: ';' cmd lCTail
+        | cmd lCTail
+        |
+        ;
+
+cmd:  TK_IDENTIFIER '=' expr 
+    | TK_IDENTIFIER '[' expr ']' '=' expr
+    | KW_IF expr cmd
+    | KW_IF expr cmd KW_ELSE cmd
+    | KW_WHILE expr cmd   
+    | KW_READ tipo TK_IDENTIFIER
+    | KW_PRINT printElement
+    | KW_RETURN expr
+    | cmdBlock
     |
     ;
 
-cmd: TK_IDENTIFIER '=' expr 
-    ;
+printElement: LIT_STRING
+            | tipo expr
+            ;
 
-expr: LIT_INT
+expr: literal
     | TK_IDENTIFIER
+    | TK_IDENTIFIER '[' expr ']'
+    | TK_IDENTIFIER '(' argsList ')'
     | expr '+' expr
     | expr '-' expr
     | expr '*' expr
     | expr '/' expr
+    | expr '<' expr
+    | expr '>' expr
+    | expr '&' expr
+    | expr '|' expr
+    | expr '~' expr
     | expr OPERATOR_DIF expr
     | expr OPERATOR_EQ expr
     | expr OPERATOR_GE expr
     | expr OPERATOR_LE expr
     | '(' expr ')'
     ;
+
+argsList: expr argsEnd
+        |
+        ;
+
+argsEnd:  ',' expr argsEnd
+        |
+        ;
 
 %%
 
