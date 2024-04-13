@@ -108,10 +108,10 @@ param: tipo TK_IDENTIFIER
 cmdBlock: '{' lCmd '}'
         ; 
 
-lCmd: cmd lCTail
+lCmd: cmd lCmdTail
     ;
 
-lCTail: ';' cmd lCTail
+lCmdTail: ';' cmd lCmdTail
       | 
       ;
 
