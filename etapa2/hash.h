@@ -1,4 +1,4 @@
-//  Etapa 1 - Compiladores 2024/1
+//  Etapa 2 - Compiladores 2024/1
 //      Autor: Matheus Lima                  
 
 #ifndef HASH_HEADER

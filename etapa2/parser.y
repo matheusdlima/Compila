@@ -1,5 +1,5 @@
 %{
-    //  Etapa 1 - Compiladores 2024/1
+    //  Etapa 2 - Compiladores 2024/1
     //      Autor: Matheus Lima  
 
     #include <stdio.h>
@@ -53,57 +53,57 @@ tipo: KW_CHAR
     | KW_BOOL 
     ;
 
-literal:  LIT_INT   
-        | LIT_CHAR  
-        | LIT_REAL  
-        | LIT_FALSE 
-        | LIT_TRUE
-        ;
+literal: LIT_INT   
+       | LIT_CHAR  
+       | LIT_REAL  
+       | LIT_FALSE 
+       | LIT_TRUE
+       ;
 
 // Program
 program: decList
-        ;
+       ;
         
-decList: decGlobal tail
-        |
-        ;
+decList: decGlobal decTail
+       |
+       ;
 
 decGlobal: decGlobalVar ';'
-        | decGlobalVec ';'
-        | decFunc
-        ;
+         | decGlobalVec ';'
+         | decFunc
+         ;
 
-tail: decGlobal tail
+decTail: decGlobal decTail
     | 
     ;
 
 decGlobalVar: tipo TK_IDENTIFIER ':' literal 
-        ;
+            ;
 
 decGlobalVec: tipo TK_IDENTIFIER '[' LIT_INT ']' initVec 
             ;
 
 initVec: ':' literal litList
-        |
-        ;
+       |
+       ;
 
 litList: literal litList
-        |
-        ;
+       |
+       ;
 
 decFunc: tipo TK_IDENTIFIER '(' paramList ')' cmdBlock
-        ;
+       ;
         
-paramList: param paramEnd
-        |
-        ;
+paramList: param paramTail
+         |
+         ;
 
-paramEnd : ',' param paramEnd
+paramTail: ',' param paramTail
         |
         ;
 
 param: tipo TK_IDENTIFIER
-      ;
+     ;
 
 cmdBlock: '{' lCmd '}'
         ; 
@@ -112,25 +112,24 @@ lCmd: cmd lCTail
     ;
 
 lCTail: ';' cmd lCTail
-        | cmd lCTail
-        |
-        ;
+      | 
+      ;
 
-cmd:  TK_IDENTIFIER '=' expr 
-    | TK_IDENTIFIER '[' expr ']' '=' expr
-    | KW_IF expr cmd
-    | KW_IF expr cmd KW_ELSE cmd
-    | KW_WHILE expr cmd   
-    | KW_READ tipo TK_IDENTIFIER
-    | KW_PRINT printElement
-    | KW_RETURN expr
-    | cmdBlock
-    |
-    ;
+cmd: TK_IDENTIFIER '=' expr 
+   | TK_IDENTIFIER '[' expr ']' '=' expr
+   | KW_IF '(' expr ')' cmd
+   | KW_IF '(' expr ')' cmd KW_ELSE cmd
+   | KW_WHILE '(' expr ')' cmd   
+   | KW_READ tipo TK_IDENTIFIER
+   | KW_PRINT printElements
+   | KW_RETURN expr
+   | cmdBlock cmd
+   |
+   ;
 
-printElement: LIT_STRING
-            | tipo expr
-            ;
+printElements: LIT_STRING
+             | tipo expr
+             ;
 
 expr: literal
     | TK_IDENTIFIER
@@ -149,21 +148,19 @@ expr: literal
     | expr OPERATOR_EQ expr
     | expr OPERATOR_GE expr
     | expr OPERATOR_LE expr
-    | '(' expr ')'
     ;
 
-argsList: expr argsEnd
+argsList: expr argsTail
         |
         ;
 
-argsEnd:  ',' expr argsEnd
-        |
-        ;
+argsTail: ',' expr argsTail
+       |
+       ;
 
 %%
 
 int yyerror (char *message) {
-    fprintf(stderr, "Syntax error at line %d.\n", getLineNumber());
+    fprintf(stderr, "Syntax error detected at line %d.\n", getLineNumber());
     exit(3);
 }
-

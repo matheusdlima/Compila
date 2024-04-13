@@ -1,4 +1,4 @@
-#  Etapa 1 - Compiladores 2024/1
+#  Etapa 2 - Compiladores 2024/1
 #      Autor: Matheus Lima 
 
 etapa2: y.tab.o lex.yy.o main.o hash.o
@@ -16,4 +16,4 @@ lex.yy.o: lex.yy.c
 lex.yy.c: scanner.l
 	flex --header-file=lex.yy.h scanner.l 
 clean:
-	rm *.o lex.yy.c y.tab.c etapa2
+	rm *.o lex.yy.c lex.yy.h y.tab.c y.output y.tab.h etapa2
