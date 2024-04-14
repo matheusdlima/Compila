@@ -47,7 +47,7 @@
 
 %%
 // Utils
-tipo: KW_CHAR 
+type: KW_CHAR 
     | KW_INT  
     | KW_FLOAT
     | KW_BOOL 
@@ -77,10 +77,10 @@ decTail: decGlobal decTail
     | 
     ;
 
-decGlobalVar: tipo TK_IDENTIFIER ':' literal 
+decGlobalVar: type TK_IDENTIFIER ':' literal 
             ;
 
-decGlobalVec: tipo TK_IDENTIFIER '[' LIT_INT ']' initVec 
+decGlobalVec: type TK_IDENTIFIER '[' LIT_INT ']' initVec 
             ;
 
 initVec: ':' literal litList
@@ -91,7 +91,7 @@ litList: literal litList
        |
        ;
 
-decFunc: tipo TK_IDENTIFIER '(' paramList ')' cmdBlock
+decFunc: type TK_IDENTIFIER '(' paramList ')' cmdBlock
        ;
         
 paramList: param paramTail
@@ -102,7 +102,7 @@ paramTail: ',' param paramTail
         |
         ;
 
-param: tipo TK_IDENTIFIER
+param: type TK_IDENTIFIER
      ;
 
 cmdBlock: '{' lCmd '}'
@@ -120,7 +120,7 @@ cmd: TK_IDENTIFIER '=' expr
    | KW_IF '(' expr ')' cmd
    | KW_IF '(' expr ')' cmd KW_ELSE cmd
    | KW_WHILE '(' expr ')' cmd   
-   | KW_READ tipo TK_IDENTIFIER
+   | KW_READ type TK_IDENTIFIER
    | KW_PRINT printElements
    | KW_RETURN expr
    | cmdBlock cmd
@@ -128,7 +128,7 @@ cmd: TK_IDENTIFIER '=' expr
    ;
 
 printElements: LIT_STRING
-             | tipo expr
+             | type expr
              ;
 
 expr: literal
