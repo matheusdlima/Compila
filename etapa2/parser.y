@@ -108,23 +108,20 @@ param: type TK_IDENTIFIER
 cmdBlock: '{' lCmd '}'
         ; 
 
-lCmd: cmd lCmdTail
+lCmd: cmd lCmd
+    |
     ;
-
-lCmdTail: ';' cmd lCmdTail
-      | 
-      ;
-
-cmd: TK_IDENTIFIER '=' expr 
-   | TK_IDENTIFIER '[' expr ']' '=' expr
-   | KW_IF '(' expr ')' cmd
+      
+cmd: TK_IDENTIFIER '=' expr ';'
+   | TK_IDENTIFIER '[' expr ']' '=' expr ';'
+   | KW_IF '(' expr ')' cmd 
    | KW_IF '(' expr ')' cmd KW_ELSE cmd
-   | KW_WHILE '(' expr ')' cmd   
-   | KW_READ type TK_IDENTIFIER
-   | KW_PRINT printElements
-   | KW_RETURN expr
-   | cmdBlock cmd
-   |
+   | KW_WHILE '(' expr ')' cmd
+   | KW_READ type TK_IDENTIFIER ';'
+   | KW_PRINT printElements ';'
+   | KW_RETURN expr ';'
+   | cmdBlock
+   | ';'
    ;
 
 printElements: LIT_STRING
@@ -148,6 +145,7 @@ expr: literal
     | expr OPERATOR_EQ expr
     | expr OPERATOR_GE expr
     | expr OPERATOR_LE expr
+    | '(' expr ')'
     ;
 
 argsList: expr argsTail
