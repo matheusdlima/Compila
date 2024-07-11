@@ -1,0 +1,20 @@
+// UFRGS - Compiladores - Marcelo Johann - 2024/1
+
+bool b : true;
+
+int main ()
+  {
+  number = 0;
+  d = d - i;
+  d = 5 +7;
+  v[d] = 55;
+  print int v[5];
+  print int d;
+  print char c;
+  i = true;
+
+  a = a + 1;
+  a = (b - 1);
+  i = incn(i,1);
+  //d = incn(d,d);
+  }
