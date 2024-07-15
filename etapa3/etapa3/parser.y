@@ -67,8 +67,8 @@
 %type<ast> argsList
 %type<ast> argsTail
 
-%type<symbol> type
-%type<symbol> literal
+%type<ast> type
+%type<ast> literal
 
 
 %left '|' '&' '~'

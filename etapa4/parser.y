@@ -6,17 +6,19 @@
 	#include <stdlib.h>
     #include "hash.h"
     #include "ast.h"
+    #include "semantic.h"
 
     int yylex();
 	int yyerror(char *message);
     extern int getLineNumber();    
 
     AST *root;
+    int SemanticErrors;
 %}
 
 %union{
-    HASH_NODE *symbol;
     AST *ast;
+    HASH_NODE *symbol;
 }
 
 %token KW_CHAR      
@@ -67,8 +69,8 @@
 %type<ast> argsList
 %type<ast> argsTail
 
-%type<symbol> type
-%type<symbol> literal
+%type<ast> type
+%type<ast> literal
 
 
 %left '|' '&' '~'
@@ -94,7 +96,9 @@ literal: LIT_INT    { $$ = astCreate(AST_SYMBOL, $1, 0, 0, 0, 0); }
        ;
 
 // Program
-program: decList        { root = $$; astPrint(root, 0); }
+program: decList        { root = $$; astPrint(root, 0); fprintf(stderr,"\n");
+                          SemanticErrors = checkSemantics(root);
+                          }
        ;
         
 decList: decGlobal decTail      { $$ = astCreate(AST_LDEC, 0, $1, $2, 0, 0); }
@@ -198,4 +202,11 @@ int yyerror (char *message) {
 
 AST* getAST(){
 	return root;
+}
+
+void checkSemanticErrors(){
+  if(SemanticErrors > 0){
+    fprintf(stderr, "\nCompilation finished with %d semantic errors.\n", SemanticErrors);
+    exit(4);
+  }
 }

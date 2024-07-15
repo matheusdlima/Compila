@@ -42,8 +42,8 @@ int main (int argc, char **argv){
     printf("Compilation succefull!\n");
     printf("File has %d lines\n", getLineNumber());
     
-    printf("\nPrinting HashTable:\n");
-    hashPrint();
+    //printf("\nPrinting HashTable:\n");
+    //hashPrint();
 
     fprintf(stderr, "Uncompiling!\n");
 

@@ -45,17 +45,14 @@ int main ()
     a = a + 1;
     print "A era=15\n";
     };
-
+    
   if (i==100)
     {
     print "Nao tem como isso...\n";
-    a = (b - 1);
-    if (teste)
-      a = 2;  
     }
   else
     print "OK!\n"; 
-  {{}} {;;;}
+  {{}} {}
   }
 
 int incn (int x, int n )
@@ -64,6 +61,3 @@ int incn (int x, int n )
   }
 
 // end of file
-  
-
-
