@@ -1,0 +1,8 @@
+int a:1;
+int func(int x, float y) {
+  return x + y;
+}
+int main() {
+  a = func(5, 2);  // Erro semântico: tipos de argumentos incompatíveis com parâmetros
+}
+

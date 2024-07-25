@@ -44,8 +44,7 @@ return  { return KW_RETURN; }
 
 {identifier}                                    { yylval.symbol = hashInsert(yytext, SYMBOL_IDENTIFIER); return TK_IDENTIFIER; } 
 
-{numeric}                                       { yylval.symbol = hashInsert(yytext, SYMBOL_LIT_INTEGER);
-                                                      return LIT_INT; } 
+{numeric}                                       { yylval.symbol = hashInsert(yytext, SYMBOL_LIT_INTEGER); return LIT_INT; } 
 '.'                                             { yylval.symbol = hashInsert(yytext, SYMBOL_LIT_CHAR); return LIT_CHAR; } 
 {numeric}+\.{numeric}*|{numeric}*\.{numeric}+   { yylval.symbol = hashInsert(yytext, SYMBOL_LIT_REAL); return LIT_REAL; } 
 {string}                                        { yylval.symbol = hashInsert(yytext, SYMBOL_LIT_STRING); return LIT_STRING; }

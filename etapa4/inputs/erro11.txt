@@ -1,0 +1,6 @@
+int v[10];
+bool b:true;
+int main() {
+  v[b] = 5;  // Erro semântico: índice de vetor não pode ser booleano
+}
+

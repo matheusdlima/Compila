@@ -61,7 +61,7 @@ void checkAndSetDeclarations(AST *node){
                 node->symbol->type = SYMBOL_VECTOR;
                 node->symbol->dataType = setDataType(node->son[0]->type);
 
-                if(! checkVectorElements(node->son[2], node->symbol->dataType)){
+                if(! checkVectorElements(node->son[2], node->symbol->dataType, atoi(node->son[1]->symbol->text), 1, node->symbol->text)){
                     fprintf(stderr, "Semantic ERROR: Vector %s declaration with elements of mixed dataType\n", node->symbol->text);
                     SemanticErrors++;
                 }
@@ -212,6 +212,7 @@ void checkNature(AST *node) {
         case AST_ATTR:
             if (node->symbol->type != SYMBOL_VARIABLE) {
                 fprintf(stderr, "Semantic ERROR: Variable %s isn't a scalar\n", node->symbol->text);
+                SemanticErrors++;
             }
             if(!isCompatibleDataType(node->symbol->dataType, node->son[0]->dataType)){
                 fprintf(stderr, "Semantic ERROR: Attribution %s with incompatible data type\n", node->symbol->text);
@@ -222,6 +223,7 @@ void checkNature(AST *node) {
         case AST_ATTRVEC:
             if (node->symbol->type != SYMBOL_VECTOR) {
                 fprintf(stderr, "Semantic ERROR: Left side of the vector must be a vector\n");
+                SemanticErrors++;
             }
             if(!isInteger(node->son[0]->dataType)){
                 fprintf(stderr, "Semantic ERROR: Index %s must be an integer\n", node->son[0]->symbol->text);
@@ -325,12 +327,18 @@ int isCompatibleDataType(int dt1, int dt2){
     return (isInteger(dt1) && isInteger(dt2)) || (dt1 == dt2);
 }
 
-bool checkVectorElements(AST *node, int dt){
+bool checkVectorElements(AST *node, int dt, int vectorSize, int nElements, char *nameVector){
 	if(node != NULL){
-		if(!isCompatibleDataType(node->son[0]->symbol->dataType, dt))
+		if (nElements > vectorSize){
+            fprintf(stderr,"elementos : %d %d\n", nElements, vectorSize);
+            fprintf(stderr, "Semantic ERROR: Vector %s declaration with different size\n", nameVector);
+            SemanticErrors++;
+        }
+        
+        if(!isCompatibleDataType(node->son[0]->symbol->dataType, dt))
 			return false;
 		if(node->son[1] != NULL)
-			return checkVectorElements(node->son[1], dt);
+			return checkVectorElements(node->son[1], dt, vectorSize, ++nElements, nameVector);
 	}
 	return true;
 }

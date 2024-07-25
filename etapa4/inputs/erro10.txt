@@ -1,0 +1,6 @@
+int v[10];
+float f:2.5;
+int main() {
+  v[f] = 5;  // Erro semântico: índice de vetor não é inteiro
+}
+

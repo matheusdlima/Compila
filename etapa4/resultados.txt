@@ -1,0 +1,15 @@
+inputs/erro1.txt: sucesso
+inputs/erro10.txt: sucesso
+inputs/erro11.txt: sucesso
+inputs/erro12.txt: sucesso
+inputs/erro13.txt: sucesso
+inputs/erro14.txt: sucesso
+inputs/erro15.txt: sucesso
+inputs/erro2.txt: sucesso
+inputs/erro3.txt: sucesso
+inputs/erro4.txt: sucesso
+inputs/erro5.txt: sucesso
+inputs/erro6.txt: sucesso
+inputs/erro7.txt: sucesso
+inputs/erro8.txt: sucesso
+inputs/erro9.txt: sucesso

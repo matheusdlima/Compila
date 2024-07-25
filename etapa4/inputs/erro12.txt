@@ -1,0 +1,5 @@
+int v[5]: 1 2 3 4 5 6;  // Erro semântico: tamanho e lista de inicialização do vetor incompatíveis
+int main() {
+  return 0;
+}
+

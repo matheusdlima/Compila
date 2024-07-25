@@ -1,0 +1,5 @@
+int a:1;
+int main() {
+  a = func(5);  // Erro semântico: uso de função func não declarada
+}
+

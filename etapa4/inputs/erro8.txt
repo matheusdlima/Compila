@@ -1,0 +1,8 @@
+int a:1;
+int func(int x) {
+  return x;
+}
+int main() {
+  a = func(5, 10);  // Erro semântico: mais argumentos do que o esperado na chamada de função
+}
+

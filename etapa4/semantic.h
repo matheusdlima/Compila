@@ -24,7 +24,7 @@ int setDataType(int sonType);
 int isCompatibleDataType(int dt1, int dt2);
 int isInteger(int dt);
 int isNumerical(int dt);
-bool checkVectorElements(AST *node, int dt);
+bool checkVectorElements(AST *node, int dt, int vectorLenght,int nElements, char *nameVector);
 void printCheck(AST *node);
 void auxPrintCheck(AST *node);
 int isRelationalOp(int nodetype);

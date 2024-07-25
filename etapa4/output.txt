@@ -16,6 +16,7 @@ print int v[ 5 ];
 print int  d ;
 print char  c ;
 i =  2 ;
+d = d[ 1 ];
 print  "Digite um numero: \n" ;
 read int d;
 while( i  <  10 ){

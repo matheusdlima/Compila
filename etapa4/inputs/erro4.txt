@@ -1,0 +1,5 @@
+int v[10];
+int main() {
+  v = 5;  // Erro semântico: v é vetor, não pode ser usado como escalar
+}
+

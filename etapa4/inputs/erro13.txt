@@ -1,0 +1,7 @@
+int func() {
+  return 2.5;  // Erro semântico: tipo do valor de retorno da função incompatível
+}
+int main() {
+  return 0;
+}
+

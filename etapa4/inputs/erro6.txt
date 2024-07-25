@@ -1,0 +1,7 @@
+int c:1;
+int a:10;
+float b:2.5;
+int main() {
+  c = a + b;  // Erro semântico: tipos incompatíveis (int e float) em expressão aritmética
+}
+

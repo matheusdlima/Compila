@@ -1,0 +1,9 @@
+int a:1;
+
+int func(int x) {
+  return x;
+}
+int main() {
+  a = a();  // Erro semântico: variavel usada como funcao
+}
+

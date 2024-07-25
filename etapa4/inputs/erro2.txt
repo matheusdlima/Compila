@@ -1,0 +1,4 @@
+int main() {
+  b = 10;  // Erro semântico: variável b não declarada
+}
+
