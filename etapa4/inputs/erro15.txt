@@ -1,3 +1,6 @@
-int a:true;
+int a: 0;
+int vector [ 10 ]: 0 0 0 0 0 0 0 0 0 0;
 
-
+int main (){
+    a = 2 + vector;
+}

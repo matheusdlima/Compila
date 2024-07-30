@@ -21,11 +21,11 @@ int main ()
   print int i;
   print char c;
   i = 2;
-  i = a + i;
+  i = a + v[6];
   f = i * 9.;
   f = 5. / 5;
 
-  return 4.3;
+  return 0;
   }
 
 int incn (int x, int n )
@@ -34,7 +34,7 @@ int incn (int x, int n )
   }
 
 bool func(){
-  return 8.9;
+  return true;
 }
 
 // end of file

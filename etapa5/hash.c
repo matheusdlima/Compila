@@ -107,6 +107,6 @@ HASH_NODE *makeLabel(){
     static int serial = 0;
     char buffer[256] = "";
 
-    sprintf(buffer, "mYLabe_ll%d", serial++);
+    sprintf(buffer, "mYLabe_l%d", serial++);
     return hashInsert(buffer, SYMBOL_LABLE);
 }

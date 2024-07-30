@@ -168,9 +168,9 @@ void astPrint(AST *node, int level){
         case AST_FUNC: 
             fprintf(stderr, "AST_FUNC"); 
             break;
-    default:
-        fprintf(stderr,"AST_UNKNOWN");
-        break;
+        default:
+            fprintf(stderr,"AST_UNKNOWN");
+            break;
     }
 
     if (node->symbol != 0){

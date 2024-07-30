@@ -96,18 +96,35 @@ int isNumerical(int dt){
     return isInteger(dt) || dt == DATATYPE_REAL;
 }
 
-int isNumber(AST *son){
-    if (son->type == AST_ADD || son->type == AST_SUB || son->type == AST_MUL || son->type == AST_DIV ||
-        (son->type == AST_SYMBOL && (
-            (son->symbol->type == SYMBOL_LIT_INTEGER || ((son->symbol->type == SYMBOL_VARIABLE || son->symbol->type == SYMBOL_PARAM)  && son->symbol->dataType == DATATYPE_INT)) || 
-            (son->symbol->type == SYMBOL_LIT_CHAR    || ((son->symbol->type == SYMBOL_VARIABLE || son->symbol->type == SYMBOL_PARAM)  && son->symbol->dataType == DATATYPE_CHAR)) ||
-            (son->symbol->type == SYMBOL_LIT_REAL    || ((son->symbol->type == SYMBOL_VARIABLE || son->symbol->type == SYMBOL_PARAM)  && son->symbol->dataType == DATATYPE_REAL))
-            )) ||
-        (son->type == AST_FUNC && isNumerical(son->symbol->dataType))){
-            return 1;
-        } else {
-            return 0;
+int isNumber(AST *son) {
+    if (!son) return 0;
+
+    // Check if the node is an arithmetic operation
+    if (son->type == AST_ADD || son->type == AST_SUB || son->type == AST_MUL || son->type == AST_DIV) {
+        return 1;
+    }
+
+    // Check if the node is a symbol
+    if (son->type == AST_SYMBOL) {
+        switch (son->symbol->type) {
+            case SYMBOL_LIT_INTEGER:
+            case SYMBOL_LIT_CHAR:
+            case SYMBOL_LIT_REAL:
+                return 1;
+            case SYMBOL_VARIABLE:
+            case SYMBOL_PARAM:
+                return isNumerical(son->symbol->dataType);
+            default:
+                return 0;
         }
+    }
+
+    // Check if the node is a function or vector and its data type is numerical
+    if ((son->type == AST_FUNC || son->type == AST_VEC) && isNumerical(son->symbol->dataType)) {
+        return 1;
+    }
+
+    return 0;
 }
 
 void checkOperands(AST *node){
@@ -161,47 +178,59 @@ void checkOperands(AST *node){
             }
             break;
         }
-
 }
 
-void setNodeTypes(AST *node){
+void setNodeTypes(AST *node) {
     if (!node) return;
 
-    for (int i = 0; i < MAX_SONS; i++){
+    // Recursively set types for all child nodes
+    for (int i = 0; i < MAX_SONS; i++) {
         setNodeTypes(node->son[i]);
     }
 
-    if (node->type == AST_SYMBOL){
-        if(node->symbol->type == SYMBOL_VECTOR || node->symbol->type == SYMBOL_FUNCTION){
-            fprintf(stderr, "Semantic ERROR: function/vector %s is used as a scalar variable\n", node->symbol->text);
-            SemanticErrors++;
-        }
-        node->dataType = node->symbol->dataType;
-    } else if (node->type == AST_FUNC || node->type == AST_VEC){
-        node->dataType = node->symbol->dataType;
-    } else if (node->type == AST_PARENT){
-        node->dataType = node->son[0]->dataType;
-    } else if (node->type == AST_ADD || node->type == AST_SUB || node->type == AST_MUL || node->type == AST_DIV){
-        node->dataType = node->son[0]->dataType > node->son[1]->dataType ? node->son[0]->dataType : node->son[1]->dataType;
-    } else if (isRelationalOp(node->type)){
-        if (!isNumerical(node->son[0]->dataType) || !isNumerical(node->son[1]->dataType)){
-            fprintf(stderr, "Semantic ERROR: Relational operation %s with incompatible data types\n", node->symbol->text);
-            SemanticErrors++;
-        }
-        node->dataType = DATATYPE_BOOL;
-    } else if (isLogicalOp(node->type)){
-        if (node->type == AST_NOT){
-            if (node->son[0]->dataType != DATATYPE_BOOL){
-                fprintf(stderr, "Semantic ERROR: Logical operation %s with incompatible data types\n", node->symbol->text);
+    switch (node->type) {
+        case AST_SYMBOL:
+            if (node->symbol->type == SYMBOL_VECTOR || node->symbol->type == SYMBOL_FUNCTION) {
+                fprintf(stderr, "Semantic ERROR: function/vector %s is used as a scalar variable\n", node->symbol->text);
                 SemanticErrors++;
             }
-        } else if (node->son[0]->dataType != DATATYPE_BOOL || node->son[1]->dataType != DATATYPE_BOOL){
-            fprintf(stderr, "Semantic ERROR: Logical operation %s with incompatible data types\n", node->symbol->text);
-            SemanticErrors++;
-        }
-        node->dataType = DATATYPE_BOOL;
-    } else if (node->type == AST_TYPEPRINT){
-        node->dataType = setDataType(node->son[0]->type);
+            node->dataType = node->symbol->dataType;
+            break;
+        case AST_FUNC:
+        case AST_VEC:
+            node->dataType = node->symbol->dataType;
+            break;
+        case AST_PARENT:
+            node->dataType = node->son[0]->dataType;
+            break;
+        case AST_ADD:
+        case AST_SUB:
+        case AST_MUL:
+        case AST_DIV:
+            node->dataType = (node->son[0]->dataType > node->son[1]->dataType) ? node->son[0]->dataType : node->son[1]->dataType;
+            break;
+        default:
+            if (isRelationalOp(node->type)) {
+                if (!isNumerical(node->son[0]->dataType) || !isNumerical(node->son[1]->dataType)) {
+                    fprintf(stderr, "Semantic ERROR: Relational operation with incompatible data types\n");
+                    SemanticErrors++;
+                }
+                node->dataType = DATATYPE_BOOL;
+            } else if (isLogicalOp(node->type)) {
+                if (node->type == AST_NOT) {
+                    if (node->son[0]->dataType != DATATYPE_BOOL) {
+                        fprintf(stderr, "Semantic ERROR: Logical operation with incompatible data types\n");
+                        SemanticErrors++;
+                    }
+                } else if (node->son[0]->dataType != DATATYPE_BOOL || node->son[1]->dataType != DATATYPE_BOOL) {
+                    fprintf(stderr, "Semantic ERROR: Logical operation with incompatible data types\n");
+                    SemanticErrors++;
+                }
+                node->dataType = DATATYPE_BOOL;
+            } else if (node->type == AST_TYPEPRINT) {
+                node->dataType = setDataType(node->son[0]->type);
+            }
+            break;
     }
 }
 
@@ -335,8 +364,8 @@ bool checkVectorElements(AST *node, int dt, int vectorSize, int nElements, char 
             SemanticErrors++;
         }
         
-        if(!isCompatibleDataType(node->son[0]->symbol->dataType, dt))
-			return false;
+        if(!isCompatibleDataType(node->son[0]->symbol->dataType, dt)) return false;
+
 		if(node->son[1] != NULL)
 			return checkVectorElements(node->son[1], dt, vectorSize, ++nElements, nameVector);
 	}
@@ -366,10 +395,6 @@ int isRelationalOp(int nodetype){
     return (nodetype == AST_LT || nodetype == AST_GT || nodetype == AST_EQ || nodetype == AST_LE || nodetype == AST_GE || nodetype == AST_DIF);
 }
 
-int isAritmeticOp(int nodetype){
-    return (nodetype == AST_ADD || nodetype == AST_SUB || nodetype == AST_MUL || nodetype == AST_DIV);
-}
-
 int isLogicalOp(int nodetype){
     return (nodetype == AST_AND || nodetype == AST_OR || nodetype == AST_NOT);
 }
@@ -391,6 +416,7 @@ AST* getDecFunc(char *name, AST *node){
 bool verifyArgumentsCount(AST *node, AST *decFunc){
 	int calledArgsCount   = getArgumentsCount(node->son[0]);
 	int declaredArgsCount = getArgumentsCount(decFunc->son[1]);	
+
 	if (calledArgsCount != declaredArgsCount){
     	fprintf(stderr, "Semantic ERROR: Different number of arguments in function %s\n", node->symbol->text);
 		SemanticErrors++;
@@ -407,12 +433,13 @@ int getArgumentsCount(AST *node){
 }
 
 void calledArgsCompare(AST *node, AST *decFunc, char funcName[20]){
-	if (node->son[0] != NULL){
+	if (node->son[0] != NULL){ // checks if have some argument in the func call
 		if (! isCompatibleDataType(node->son[0]->dataType, decFunc->son[0]->symbol->dataType)){
 			fprintf(stderr, "Semantic ERROR: Different argument types in function %s, argument %s \n", funcName, decFunc->son[0]->symbol->text);
 			SemanticErrors++;
 		}
         
+        // checks whether the argument is a function or a vector, which is not allowed
         if (node->son[0]->type == AST_SYMBOL){
             if (node->son[0]->symbol->type == SYMBOL_FUNCTION){
                 fprintf(stderr, "Semantic ERROR: You can't pass a function (%s) as argument\n", node->son[0]->symbol->text);
@@ -422,7 +449,7 @@ void calledArgsCompare(AST *node, AST *decFunc, char funcName[20]){
 			    SemanticErrors++;
             }
         }
+        
 		if (node->son[1] != NULL) calledArgsCompare(node->son[1], decFunc->son[1], funcName);
 	}
 }
-

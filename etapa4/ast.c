@@ -162,9 +162,15 @@ void astPrint(AST *node, int level){
         case AST_CMDBLOCK: 
             fprintf(stderr, "AST_CMDBLOCK"); 
             break;
-    default:
-        fprintf(stderr,"AST_UNKNOWN");
-        break;
+        case AST_VEC: 
+            fprintf(stderr, "AST_VEC"); 
+            break;
+        case AST_FUNC: 
+            fprintf(stderr, "AST_FUNC"); 
+            break;
+        default:
+            fprintf(stderr,"AST_UNKNOWN");
+            break;
     }
 
     if (node->symbol != 0){
