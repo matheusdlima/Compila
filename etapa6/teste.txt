@@ -1,0 +1,59 @@
+// UFRGS - Compiladores - Marcelo Johann - 2024/1
+
+char a:'a';
+bool b:true;
+char c:'x';
+char d:100;
+int number:199;
+int i:1;
+int v[10]: 'a' 0'b'0 0 0 0 0 0 0;
+int matrix[100]; 
+float f:2.5;		// 0.0 .0 0. are all allowed
+
+int main ()
+  {
+  number = incn(8,9);
+  number = v[2];
+  v[incn(2,1)] = 55;
+  read int d;
+  d = 3 + 1 + d;
+  print "teste";
+  print int i;
+  print char c;
+  i = 2;
+  i = a + i;
+  d = 7 - 8;
+  f = i * 9.;
+  f = 5. / 5;
+
+  while (i<10)
+    {
+    i = incn(i,1);
+    d = incn(d,d);
+    }
+
+  if (~b)
+    {
+    a = a + 1;
+    print "A era=15\n";
+    };
+  
+  if (i==100)
+    {
+    print "Nao tem como isso...\n";
+    }
+  else
+    print "OK!\n"; 
+  {{}} {}
+    
+  return 0;
+  }
+
+int incn (int x, int n )
+  {
+  return n + x;
+  }
+
+// end of file
+  
+
