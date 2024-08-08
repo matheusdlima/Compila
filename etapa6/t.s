@@ -10,26 +10,26 @@ _main:                                  ## @main
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	movl	_a(%rip), %eax
-	addl	$1, %eax
-	movl	%eax, _a(%rip)
-	movl	_a(%rip), %esi
-	leaq	L_.str(%rip), %rdi
-	movb	$0, %al
-	callq	_printf
 	xorl	%eax, %eax
+	movq	_b@GOTPCREL(%rip), %rcx
+	movl	_vec+8(%rip), %edx
+	movl	%edx, (%rcx)
 	popq	%rbp
 	retq
 	.cfi_endproc
                                         ## -- End function
 	.section	__DATA,__data
-	.globl	_a                              ## @a
-	.p2align	2
-_a:
-	.long	76                              ## 0x4c
+	.globl	_vec                            ## @vec
+	.p2align	4
+_vec:
+	.long	1                               ## 0x1
+	.long	2                               ## 0x2
+	.long	3                               ## 0x3
+	.long	4                               ## 0x4
+	.long	5                               ## 0x5
 
-	.section	__TEXT,__cstring,cstring_literals
-L_.str:                                 ## @.str
-	.asciz	"%d\n"
-
+	.comm	_b,4,2                          ## @b
+	.comm	_c,4,2                          ## @c
+	.comm	_d,1,0                          ## @d
+	.comm	_f,1,0                          ## @f
 .subsections_via_symbols

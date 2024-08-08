@@ -168,6 +168,12 @@ void astPrint(AST *node, int level){
         case AST_FUNC: 
             fprintf(stderr, "AST_FUNC"); 
             break;
+        case AST_TYPEPRINT: 
+            fprintf(stderr, "AST_TYPEPRINT"); 
+            break;
+        case AST_SEMICOLON: 
+            fprintf(stderr, "AST_SEMICOLON"); 
+            break;
         default:
             fprintf(stderr,"AST_UNKNOWN");
             break;

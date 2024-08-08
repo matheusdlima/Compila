@@ -56,8 +56,4 @@ TAC* tacJoin(TAC* l1, TAC* l2);
 // CODE GENERATION
 TAC* generateCode(AST *node, HASH_NODE *currentWhileLabel);
 
-// ASM GENERATION
-TAC* tacReverse(TAC *tac);
-void generateASM(TAC* first);
-
 #endif

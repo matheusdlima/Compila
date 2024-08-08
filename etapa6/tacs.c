@@ -125,7 +125,7 @@ void tacPrintBackwards(TAC* tac){
 }
 
 // CODE GENERATION
-TAC* makeOperations(int TAC_DEFINE, TAC* code0, TAC* code1);
+TAC* makeOperations(int TAC_DEFINE, TAC* code0, TAC* code1, int dataType);
 TAC* makeIf(TAC* code[]);
 TAC* makeWhile(TAC* code[], HASH_NODE *whileLabel);
 
@@ -152,43 +152,43 @@ TAC* generateCode(AST *node, HASH_NODE *currentWhileLabel){
             break;
         // BYNARY OPERATIONS
         case AST_ADD:
-            result = makeOperations(TAC_ADD, code[0], code[1]);
+            result = makeOperations(TAC_ADD, code[0], code[1], node->dataType);
             break;
         case AST_SUB:
-            return makeOperations(TAC_SUB, code[0], code[1]);
+            return makeOperations(TAC_SUB, code[0], code[1], node->dataType);
             break;
 		case AST_MUL:
-            return makeOperations(TAC_MUL, code[0], code[1]);
+            return makeOperations(TAC_MUL, code[0], code[1], node->dataType);
             break;
 		case AST_DIV:
-            return makeOperations(TAC_DIV, code[0], code[1]);
+            return makeOperations(TAC_DIV, code[0], code[1], node->dataType);
             break;
 		case AST_GT:
-            return makeOperations(TAC_GREAT, code[0], code[1]);
+            return makeOperations(TAC_GREAT, code[0], code[1], node->dataType);
             break;
 		case AST_LT:
-            return makeOperations(TAC_LESS, code[0], code[1]);
+            return makeOperations(TAC_LESS, code[0], code[1], node->dataType);
             break;
 		case AST_EQ:
-            return makeOperations(TAC_EQ, code[0], code[1]);
+            return makeOperations(TAC_EQ, code[0], code[1], node->dataType);
             break;
 		case AST_GE:
-            return makeOperations(TAC_GE, code[0], code[1]);
+            return makeOperations(TAC_GE, code[0], code[1], node->dataType);
             break;
 		case AST_LE:
-            return makeOperations(TAC_LE, code[0], code[1]);
+            return makeOperations(TAC_LE, code[0], code[1], node->dataType);
             break;
 		case AST_DIF:
-            return makeOperations(TAC_DIF, code[0], code[1]);
+            return makeOperations(TAC_DIF, code[0], code[1], node->dataType);
             break;
 		case AST_AND:
-            return makeOperations(TAC_AND, code[0], code[1]);
+            return makeOperations(TAC_AND, code[0], code[1], node->dataType);
             break;
 		case AST_OR:
-            return makeOperations(TAC_OR, code[0], code[1]);
+            return makeOperations(TAC_OR, code[0], code[1], node->dataType);
             break;
 		case AST_NOT:
-            return makeOperations(TAC_NOT, code[0], code[1]);
+            return makeOperations(TAC_NOT, code[0], code[1], node->dataType);
             break;
         
         // COMANDS
@@ -216,10 +216,10 @@ TAC* generateCode(AST *node, HASH_NODE *currentWhileLabel){
             result = makeWhile(code, currentWhileLabel);
             break;
         case AST_VEC:
-            result = tacJoin(code[0], tacCreate(TAC_VEC, makeTemp(), node->symbol, code[0]?code[0]->res:0));
+            result = tacJoin(code[0], tacCreate(TAC_VEC, makeTemp(node->dataType), node->symbol, code[0]?code[0]->res:0));
             break;
         case AST_FUNC:
-            result = tacJoin(code[0], tacCreate(TAC_CALL, makeTemp(), node->symbol, 0));
+            result = tacJoin(code[0], tacCreate(TAC_CALL, makeTemp(node->dataType), node->symbol, 0));
             break;
         case AST_ARGSLST: 
         case AST_ARGSTAIL:
@@ -251,8 +251,8 @@ TAC* tacJoin(TAC* l1, TAC* l2){
 }
 
 // MAKES
-TAC* makeOperations(int TAC_DEFINE, TAC* code0, TAC* code1){
-    return tacJoin(tacJoin(code0, code1), tacCreate(TAC_DEFINE, makeTemp(),code0?code0->res:0,code1?code1->res:0) );
+TAC* makeOperations(int TAC_DEFINE, TAC* code0, TAC* code1, int dataType){
+    return tacJoin(tacJoin(code0, code1), tacCreate(TAC_DEFINE, makeTemp(dataType),code0?code0->res:0,code1?code1->res:0) );
 }
 
 TAC* makeIf(TAC* code[]){
@@ -308,64 +308,3 @@ TAC* makeWhile(TAC* code[], HASH_NODE *whileLabel){
             jumpTAC), 
         jumpLabelTAC);
 }
-
-// ASM GENERATION
-TAC* tacReverse(TAC *tac){
-    TAC* t = tac;
-
-    for (t = tac; t->prev; t = t->prev){
-        t->prev->next = t;
-    }
-
-    return t;
-}
-
-void generateASM(TAC* first){
-    FILE *fout;
-
-    fout = fopen("out.s", "w");
-
-    // Init
-    fprintf(fout, "## FIXED INIT\n"
-    ".section	__TEXT,__cstring,cstring_literals\n"
-    "printIntStr: .asciz	\"%%d\\n\"\n"
-	"printStr: .asciz	\"%%s\\n\"\n"
-    "\n"
-	".section	__TEXT,__text,regular,pure_instructions\n\n");
-
-    // Each TAC
-
-    for (TAC* tac = first; tac; tac = tac->next){
-        switch (tac->type){
-            case TAC_BEGINFUN: 
-                fprintf(fout, 
-                "## TAC_BEGINFUN\n"                     
-                    "\t.globl	_%s\n"
-                "_%s:\n"                  
-                    "\tpushq	%%rbp\n"
-                    "\tmovq	%%rsp, %%rbp\n\n", tac->res->text, tac->res->text);
-                break;
-            case TAC_ENDFUN: 
-                fprintf(fout, 
-                "## TAC_ENDFUN\n"
-                    "\tpopq	%%rbp\n"
-                    "\tretq\n\n");
-                break;
-            case TAC_PRINT: 
-                fprintf(fout, 
-                "## TAC_PRINTINT\n"
-                    "\tleaq	printIntStr(%%rip), %%rdi\n"
-                    "\tmovl	_%s(%%rip), %%esi\n"
-                    "\tmovb	$0, %%al\n"
-                    "\tcallq	_printf\n\n", tac->res->text);
-                break;
-        }
-    }
-
-    // Hash table
-    printASM(fout);
-    
-    // Each tac
-    fclose(fout);
-}
-

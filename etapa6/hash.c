@@ -95,12 +95,15 @@ int hashCheckUndeclared(){
     return undeclared;
 }
 
-HASH_NODE *makeTemp(){
+HASH_NODE *makeTemp(int dataType){
     static int serial = 0;
     char buffer[256] = "";
 
     sprintf(buffer, "mYWeeirT_emp%d", serial++);
-    return hashInsert(buffer, SYMBOL_VARIABLE);
+    
+    HASH_NODE *node = hashInsert(buffer, SYMBOL_VARIABLE);
+    node->dataType = dataType;
+    return node;
 }
 
 HASH_NODE *makeLabel(){
@@ -114,15 +117,74 @@ HASH_NODE *makeLabel(){
 void printASM(FILE* fout){
     int i;
     HASH_NODE *node;
-
-    fprintf(fout,
-    "# DATA SECTION\n"
-	".section	__DATA,__data\n\n");
+    
+    fprintf(fout,"\n");
 
     for (i = 0; i < HASH_SIZE; i++){   
         for (node = Table[i]; node; node = node->next){
-            if (node->type == SYMBOL_VARIABLE)
-                fprintf(fout,"_%s:\t.long\t0\n", node->text);
+            if (strncmp(node->text, "mYWeeirT_emp", 12) == 0){
+                if (node->dataType == DATATYPE_REAL)
+                    fprintf(fout,"\t.comm\t_FLOAT%s,4,2\n", node->text);
+                else if (node->dataType == DATATYPE_INT)
+                    fprintf(fout,"\t.comm\t_INT%s,4,2\n", node->text);
+                else if (node->dataType == DATATYPE_BOOL)
+                    fprintf(fout,"\t.comm\t_%s%s,1,0\n", strcmp(node->text, "true") ? "FALSE":"TRUE", node->text);
+                else if (node->dataType == DATATYPE_CHAR)
+                    fprintf(fout,"\t.comm\t_CHAR%s,1,0\n", node->text);
+            } 
         }
     }
 }
+
+void setLitValues(FILE* fout){
+    int i;
+    HASH_NODE *node;
+
+	for(i = 0; i < HASH_SIZE; i++) {	
+		for(node = Table[i]; node; node = node->next){
+            if(node->type == SYMBOL_LIT_REAL) {
+                fprintf(fout, "_FLOAT%s:\t.float  %s\n", node->text, node->text);
+            } else if (node->type == SYMBOL_LIT_INTEGER){
+                fprintf(fout, "_INT%s:\t.long   %s\n", node->text, node->text);
+            } else if (node->type == SYMBOL_LIT_CHAR){
+                fprintf(fout, "_CHAR%d:\t.long   %d\n", node->text[1], node->text[1]);
+            } else if ((node->type == SYMBOL_LIT_TRUE) || (node->type == SYMBOL_LIT_FALSE)){
+                fprintf(fout, "_BOOL%s:\t.byte   %d\n", node->text, strcmp(node->text, "true") ? 0 : 1);
+            }
+		}
+	}	
+}
+
+char* remove_quotes(const char *str) {
+    int len = strlen(str);
+    if (len > 2 && str[0] == '"' && str[len - 1] == '"') {
+        char *new_str = (char*)malloc((len - 1) * sizeof(char));
+        if (new_str == NULL) {
+            return NULL;
+        }
+        strncpy(new_str, str + 1, len - 2);
+        new_str[len - 2] = '\0';
+        return new_str;
+    } else {
+        char *new_str = (char*)malloc((len + 1) * sizeof(char));
+        if (new_str == NULL) {
+            return NULL;
+        }
+        strcpy(new_str, str);
+        return new_str;
+    }
+}
+
+void setLitStrings(FILE* fout){
+    int i;
+    HASH_NODE *node;
+
+	for(i = 0; i < HASH_SIZE; i++) {	
+		for(node = Table[i]; node; node = node->next){
+            if (node->type == SYMBOL_LIT_STRING){
+                fprintf(fout, "_STRING%s:\t.asciz	%s", remove_quotes(node->text), node->text);
+            }
+        }
+    }
+}
+

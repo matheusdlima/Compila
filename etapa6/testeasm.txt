@@ -6,7 +6,7 @@ char c:'x';
 char d:100;
 int number:199;
 int i:1;
-int v[10]: 'a' 0'b'0 0 0 0 0 0 0;
+int v[10]: 'a' 1 'b'2 3 4 5 6 7 8;
 int matrix[100]; 
 float f:2.5;		// 0.0 .0 0. are all allowed
 
@@ -17,9 +17,12 @@ int main ()
   v[incn(2,1)] = 55;
   read int d;
   d = 3 + 1 + d;
-  //print "teste";
-  print int i;
-  print char c;
+  print "teste";
+  print int v[9];
+  print float f;
+  print char 'G';
+  print bool true;
+  print bool false;
   i = 2;
   i = a + i;
   d = 7 - 8;

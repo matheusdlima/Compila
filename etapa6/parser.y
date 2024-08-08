@@ -8,6 +8,7 @@
     #include "ast.h"
     #include "semantic.h"
     #include "tacs.h"
+    #include "asm.h"
 
     int yylex();
 	int yyerror(char *message);
@@ -103,9 +104,9 @@ program: decList        { root = $$;
                           fprintf(stderr,"\n");
                           SemanticErrors = checkSemantics(root);
                           code = generateCode(root, 0);
-                          tacPrintBackwards(generateCode(root, 0));
+                          tacPrintBackwards(code);
                           code = tacReverse(code);
-                          generateASM(code);
+                          generateASM(code, root);
                           }
        ;
         
