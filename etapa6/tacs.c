@@ -22,9 +22,6 @@ void tacPrint(TAC* tac){
     fprintf(stderr, "TAC(");
 
     switch(tac->type){
-        case TAC_SYMBOL:
-            fprintf(stderr, "TAC_SYMBOL");
-            break;
         case TAC_ADD:
             fprintf(stderr, "TAC_ADD");
             break;

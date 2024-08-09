@@ -46,7 +46,7 @@ HASH_NODE *makeLabel();
 // ASM GENERATE FUNCTIONS
 void printASM(FILE* fout);
 void setLitValues(FILE* fout);
-char* remove_quotes(const char *str);
+unsigned long hashString(const char *str);
 void setLitStrings(FILE* fout);
 
 #endif

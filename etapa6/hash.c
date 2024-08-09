@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h> 
 #include "hash.h"
 
 HASH_NODE*Table[HASH_SIZE];
@@ -128,7 +129,7 @@ void printASM(FILE* fout){
                 else if (node->dataType == DATATYPE_INT)
                     fprintf(fout,"\t.comm\t_INT%s,4,2\n", node->text);
                 else if (node->dataType == DATATYPE_BOOL)
-                    fprintf(fout,"\t.comm\t_%s%s,1,0\n", strcmp(node->text, "true") ? "FALSE":"TRUE", node->text);
+                    fprintf(fout,"\t.comm\t_BOOL%s,1,0\n", node->text);
                 else if (node->dataType == DATATYPE_CHAR)
                     fprintf(fout,"\t.comm\t_CHAR%s,1,0\n", node->text);
             } 
@@ -155,24 +156,15 @@ void setLitValues(FILE* fout){
 	}	
 }
 
-char* remove_quotes(const char *str) {
-    int len = strlen(str);
-    if (len > 2 && str[0] == '"' && str[len - 1] == '"') {
-        char *new_str = (char*)malloc((len - 1) * sizeof(char));
-        if (new_str == NULL) {
-            return NULL;
-        }
-        strncpy(new_str, str + 1, len - 2);
-        new_str[len - 2] = '\0';
-        return new_str;
-    } else {
-        char *new_str = (char*)malloc((len + 1) * sizeof(char));
-        if (new_str == NULL) {
-            return NULL;
-        }
-        strcpy(new_str, str);
-        return new_str;
+unsigned long hashString(const char *str) {
+    unsigned long hash = 5381;
+    int c;
+
+    while ((c = *str++)) {
+        hash = ((hash << 5) + hash) + c;  // hash * 33 + c
     }
+
+    return hash;
 }
 
 void setLitStrings(FILE* fout){
@@ -182,7 +174,7 @@ void setLitStrings(FILE* fout){
 	for(i = 0; i < HASH_SIZE; i++) {	
 		for(node = Table[i]; node; node = node->next){
             if (node->type == SYMBOL_LIT_STRING){
-                fprintf(fout, "_STRING%s:\t.asciz	%s", remove_quotes(node->text), node->text);
+                fprintf(fout, "_STRING%lu:\t.asciz\t%s\n", hashString(node->text), node->text);
             }
         }
     }

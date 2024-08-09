@@ -56,6 +56,18 @@ _main:
 	movl	_v+8(%rip), %edx
 	movl	%edx, (%rcx)
 
+## TAC_COPY
+	xorl	%eax, %eax
+	movq	_c@GOTPCREL(%rip), %rcx
+	movl	_b(%rip), %edx
+	movl	%edx, (%rcx)
+
+## TAC_ADD
+	xorl	%eax, %eax
+	movq	_a@GOTPCREL(%rip), %rcx
+	movl	_c(%rip), %edx
+	addl	_b(%rip), %edx
+	movl	%edx, (%rcx)
 
 ## TAC_ENDFUN
 	popq	%rbp

@@ -8,6 +8,8 @@
 #include "ast.h"
 #include "hash.h"
 
+char* getTacStrDataType(int dataType);
+
 // ASM GENERATION
 TAC* tacReverse(TAC *tac){
     TAC* t = tac;
@@ -19,6 +21,19 @@ TAC* tacReverse(TAC *tac){
     return t;
 }
 
+char* getTacStrDataType(int dataType){
+    char *typeStr = malloc(sizeof(char)*5);
+
+    switch (dataType){
+        case DATATYPE_INT: strcpy(typeStr,"INT"); break;
+        case DATATYPE_REAL: strcpy(typeStr,"FLOAT"); break;
+        case DATATYPE_BOOL: strcpy(typeStr, "BOOL"); break;
+        case DATATYPE_CHAR: strcpy(typeStr,"CHAR"); break;
+    }
+
+    return typeStr;
+}
+
 void setVariablesValues(FILE *fout, AST* node){
     if (!node) return;
 
@@ -26,17 +41,17 @@ void setVariablesValues(FILE *fout, AST* node){
 
 	if (node->type == AST_DECVAR) { 
 		if(node->son[0]->type == AST_TPFLOAT) {
-			fprintf(fout, "_FLOAT%s:\t.float	%s\n", node->symbol->text, node->son[1]->symbol->text);
+			fprintf(fout, "\t.globl _FLOAT%s\n_FLOAT%s:\t.float	%s\n", node->symbol->text, node->symbol->text, node->son[1]->symbol->text);
 		} else if (node->son[0]->type == AST_TPINT) {
-			fprintf(fout, "_INT%s:\t.long	%s\n", node->symbol->text, node->son[1]->symbol->text);
+			fprintf(fout, "\t.globl _INT%s\n_INT%s:\t.long	%s\n", node->symbol->text, node->symbol->text, node->son[1]->symbol->text);
 		} else if (node->son[0]->type == AST_TPBOOL) {
-			fprintf(fout, "_%s%s:\t.long	%d\n", strcmp(node->son[1]->symbol->text, "true") ? "FALSE" : "TRUE", node->symbol->text, strcmp(node->son[1]->symbol->text, "true") ? 0 : 1);
+			fprintf(fout, "\t.globl _BOOL%s\n_BOOL%s:\t.long    %d\n", node->symbol->text, node->symbol->text, strcmp(node->son[1]->symbol->text, "true") ? 0:1);
 		} else if (node->son[0]->type == AST_TPCHAR) {
             if (node->son[1]->symbol->text[0] == '\'')
                 charData = (int)(node->son[1]->symbol->text[1]);
             else charData = atoi(node->son[1]->symbol->text);
 
-			fprintf(fout, "_CHAR%s:\t.long	%d\n", node->symbol->text, charData);
+			fprintf(fout, "\t.globl _CHAR%s\n_CHAR%s:\t.long	%d\n", node->symbol->text, node->symbol->text, charData);
 		}
 	} 
     // else if (node->type == AST_PARAM){  // Params are global variables!
@@ -51,8 +66,10 @@ void setVariablesValues(FILE *fout, AST* node){
     else if(node->type == AST_DECVEC){
         if (node->son[2]){
             fprintf(fout,
-            "\t.globl\t_%s\n"
-            "_%s:\n", node->symbol->text, node->symbol->text);
+            "\t.globl\t_%s%s\n"
+            "_%s%s:\n", getTacStrDataType(node->symbol->dataType), node->symbol->text, getTacStrDataType(node->symbol->dataType), node->symbol->text);
+        } else {
+            fprintf(fout, "\t.comm\t_%s%s,%d,4\n", getTacStrDataType(node->symbol->dataType), node->symbol->text, 4*atoi(node->son[1]->symbol->text));
         }
 
         for(AST* aux = node->son[2]; aux; aux = aux->son[1]) {
@@ -71,6 +88,9 @@ void setVariablesValues(FILE *fout, AST* node){
 
 void generateASM(TAC* first, AST *root){
     FILE *fout;
+    int jumpFalseCount = 0;
+    int jumpTrueCount = 0;
+    int jumpEndCount = 0;
 
     fout = fopen("out.s", "w");
 
@@ -110,12 +130,16 @@ void generateASM(TAC* first, AST *root){
                         "\tmovb	$0, %%al\n"
                         "\tcallq	_printf\n\n", tac->res->text);
                 } else if (tac->res->dataType == DATATYPE_CHAR){
-                   fprintf(fout, 
+                    fprintf(fout, 
                     "## TAC_PRINTCHAR\n"
-                        "\tleaq	printIntStr(%%rip), %%rdi\n"
-                        "\tmovl	_CHAR%d(%%rip), %%esi\n"
+                        "\tleaq	printIntStr(%%rip), %%rdi\n");
+                    if (tac->res->type == SYMBOL_VARIABLE)
+                        fprintf(fout, "\tmovl	_CHAR%s(%%rip), %%esi\n", tac->res->text);
+                    else
+                        fprintf(fout, "\tmovl	_CHAR%d(%%rip), %%esi\n", tac->res->text[1]);
+                    fprintf(fout,
                         "\tmovb	$0, %%al\n"
-                        "\tcallq	_printf\n\n", tac->res->text[1]); 
+                        "\tcallq	_printf\n\n");
                 } else if (tac->res->dataType == DATATYPE_REAL){
                     fprintf(fout, 
                     "## TAC_PRINTREAL\n"
@@ -139,34 +163,229 @@ void generateASM(TAC* first, AST *root){
                     fprintf(fout, 
                     "## TAC_PRINTSTR\n"
                         "\tleaq	printStr(%%rip), %%rdi\n"
-                        "\tleaq	_STRING%s(%%rip), %%rsi\n"
+                        "\tleaq	_STRING%lu(%%rip), %%rsi\n"
                         "\tmovb	$0, %%al\n"
                         "\tcallq	_printf\n"
-                        "\txorl	%%eax, %%eax\n\n", remove_quotes(tac->res->text));
+                        "\txorl	%%eax, %%eax\n\n", hashString(tac->res->text));
                 }
                 break;
-            case TAC_VEC:
-                fprintf(stderr, "%s %s %d\n", tac->res->text, tac->op1->text, 4*atoi(tac->op2->text));
-                char type[5];
-                switch (tac->res->dataType){
-                    case DATATYPE_INT: strcpy(type,"INT"); break;
-                    case DATATYPE_REAL: strcpy(type,"FLOAT"); break;
-                    case DATATYPE_BOOL: 
-                        if (strcmp(tac->res->text,"true"))
-                            strcpy(type, "TRUE");
-                        else
-                            strcpy(type, "FALSE");
-                        break;
-                    case DATATYPE_CHAR: strcpy(type,"CHAR"); break;
-                }
-                 
+            case TAC_VEC: 
                 fprintf(fout, 
-                    "## TAC_VET"
-                    "\txorl	%%eax, %%eax\n"
-                    "\tmovq	_%s%s@GOTPCREL(%%rip), %%rcx\n"
-                    "\tmovl	_%s+%d(%%rip), %%edx\n"
-                    "\tmovl	%%edx, (%%rcx)\n\n", type, tac->res->text, tac->op1->text, 4*atoi(tac->op2->text));
-          break;
+                    "## TAC_VEC\n"
+                        "\txorl	%%eax, %%eax\n"
+                        "\tmovq	_%s%s@GOTPCREL(%%rip), %%rcx\n"
+                        "\tmovl	_%s%s+%d(%%rip), %%edx\n"
+                        "\tmovl	%%edx, (%%rcx)\n\n", getTacStrDataType(tac->res->dataType), tac->res->text, getTacStrDataType(tac->op1->dataType), tac->op1->text, 4*atoi(tac->op2->text));
+                break;
+            case TAC_ATTRVEC: 
+                fprintf(fout, 
+                    "## TAC_ATTRVEC\n"
+                        "\txorl	%%eax, %%eax\n"
+                        "\tmovl	_%s%s(%%rip), %%esi\n"
+                        "\tmovslq	_%s%s(%%rip), %%rdx\n"
+                        "\tleaq	_%s%s(%%rip), %%rcx\n"
+                        "\tmovl	%%esi, (%%rcx,%%rdx,4)\n\n", getTacStrDataType(tac->op2->dataType), tac->op2->text, getTacStrDataType(tac->op1->dataType), tac->op1->text, getTacStrDataType(tac->res->dataType), tac->res->text);
+            case TAC_COPY:
+                fprintf(fout, 
+                    "## TAC_COPY\n"
+                        "xorl	%%eax, %%eax\n"
+                        "\tmovq	_%s%s@GOTPCREL(%%rip), %%rcx\n"
+                        "\tmovl	_%s%s(%%rip), %%edx\n"
+                        "\tmovl	%%edx, (%%rcx)\n\n", getTacStrDataType(tac->res->dataType), tac->res->text, getTacStrDataType(tac->op1->dataType),tac->op1->text);
+                break;
+            case TAC_ADD:
+                if (tac->res->dataType == DATATYPE_REAL){
+                    fprintf(fout,
+                    "## TAC_ADD"
+                        "\txorl	%%eax, %%eax\n"
+                        "\tmovq	_%s%s@GOTPCREL(%%rip), %%rcx\n"
+                        "\tmovss	_%s%s(%%rip), %%xmm0\n"
+                        "\taddss	_%s%s(%%rip), %%xmm0\n"
+                        "\tmovss	%%xmm0, (%%rcx)\n\n", getTacStrDataType(tac->res->dataType), tac->res->text, getTacStrDataType(tac->op1->dataType), tac->op1->text, getTacStrDataType(tac->op2->dataType), tac->op2->text);
+                } else {
+                    fprintf(fout,
+                        "## TAC_ADD"
+                            "\txorl	%%eax, %%eax\n"
+                            "\tmovq	_%s%s@GOTPCREL(%%rip), %%rcx\n"
+                            "\tmovl	_%s%s(%%rip), %%edx\n"
+                            "\taddl	_%s%s(%%rip), %%edx\n"
+                            "\tmovl	%%edx, (%%rcx)\n\n", getTacStrDataType(tac->res->dataType), tac->res->text, getTacStrDataType(tac->op1->dataType), tac->op1->text, getTacStrDataType(tac->op2->dataType), tac->op2->text);
+                }
+                break;
+            case TAC_SUB:
+                if (tac->res->dataType == DATATYPE_REAL){
+                    fprintf(fout,
+                    "## TAC_SUB"
+                        "\txorl	%%eax, %%eax\n"
+                        "\tmovq	_%s%s@GOTPCREL(%%rip), %%rcx\n"
+                        "\tmovss	_%s%s(%%rip), %%xmm0\n"
+                        "\tsubss	_%s%s(%%rip), %%xmm0\n"
+                        "\tmovss	%%xmm0, (%%rcx)\n\n", getTacStrDataType(tac->res->dataType), tac->res->text, getTacStrDataType(tac->op1->dataType), tac->op1->text, getTacStrDataType(tac->op2->dataType), tac->op2->text);
+                } else {
+                    fprintf(fout,
+                        "## TAC_SUB"
+                            "\txorl	%%eax, %%eax\n"
+                            "\tmovq	_%s%s@GOTPCREL(%%rip), %%rcx\n"
+                            "\tmovl	_%s%s(%%rip), %%edx\n"
+                            "\tsubl	_%s%s(%%rip), %%edx\n"
+                            "\tmovl	%%edx, (%%rcx)\n\n", getTacStrDataType(tac->res->dataType), tac->res->text, getTacStrDataType(tac->op1->dataType), tac->op1->text, getTacStrDataType(tac->op2->dataType), tac->op2->text);
+                }
+                break;
+            case TAC_MUL:
+                if (tac->res->dataType == DATATYPE_REAL){
+                    fprintf(fout,
+                    "## TAC_MUL"
+                        "\txorl	%%eax, %%eax\n"
+                        "\tmovq	_%s%s@GOTPCREL(%%rip), %%rdx\n"
+                        "\tmovss	_%s%s(%%rip), %%xmm0\n"
+                        "\tmulss	_%s%s(%%rip), %%xmm0\n"
+                        "\tmovss	%%xmm0, (%%rdx)\n\n", getTacStrDataType(tac->res->dataType), tac->res->text, getTacStrDataType(tac->op1->dataType), tac->op1->text, getTacStrDataType(tac->op2->dataType), tac->op2->text);
+                } else {
+                    fprintf(fout,
+                        "## TAC_MUL"
+                            "\txorl	%%eax, %%eax\n"
+                            "\tmovq	_%s%s@GOTPCREL(%%rip), %%rcx\n"
+                            "\tmovl	_%s%s(%%rip), %%edx\n"
+                            "\timull	_%s%s(%%rip), %%edx\n"
+                            "\tmovl	%%edx, (%%rcx)\n\n", getTacStrDataType(tac->res->dataType), tac->res->text, getTacStrDataType(tac->op1->dataType), tac->op1->text, getTacStrDataType(tac->op2->dataType), tac->op2->text);
+                }
+                break;
+                case TAC_DIV:
+                if (tac->res->dataType == DATATYPE_REAL){
+                    fprintf(fout,
+                    "## TAC_DIV"
+                        "\txorl	%%eax, %%eax\n"
+                        "\tmovq	_%s%s@GOTPCREL(%%rip), %%rcx\n"
+                        "\tmovss	_%s%s(%%rip), %%xmm0\n"
+                        "\tdivss	_%s%s(%%rip), %%xmm0\n"
+                        "\tmovss	%%xmm0, (%%rcx)\n\n", getTacStrDataType(tac->res->dataType), tac->res->text, getTacStrDataType(tac->op1->dataType), tac->op1->text, getTacStrDataType(tac->op2->dataType), tac->op2->text);
+                } else {
+                    fprintf(fout,
+                        "## TAC_DIV"
+                            "\txorl	%%eax, %%eax\n"
+                            "\tmovl	%%eax, -4(%%rbp)\n"
+                            "\tmovq	_%s%s@GOTPCREL(%%rip), %%rcx\n"
+                            "\tmovl	_%s%s(%%rip), %%eax\n\tcltd\n"
+                            "\tidivl	_%s%s(%%rip)\n"
+                            "\tmovl   %%eax, %%edx\n"
+                            "\tmovl   -4(%%rbp), %%eax\n"
+                            "\tmovl	%%edx, (%%rcx)\n\n", getTacStrDataType(tac->res->dataType), tac->res->text, getTacStrDataType(tac->op1->dataType), tac->op1->text, getTacStrDataType(tac->op2->dataType), tac->op2->text);
+                }
+                break;
+            case TAC_GREAT:
+                fprintf(fout,
+                "## TAC GREATER\n"
+                    "\tmovl    _%s%s(%%rip), %%eax\n"
+                    "\tcmpl    _%s%s(%%rip), %%eax\n"
+                    "\tsetg    %%al\n"
+                    "\tmovzbl  %%al, %%eax\n"
+                    "\tmovl    %%eax, _%s%s(%%rip)\n\n", getTacStrDataType(tac->op1->dataType), tac->op1->text, getTacStrDataType(tac->op2->dataType), tac->op2->text, getTacStrDataType(tac->res->dataType), tac->res->text);
+                break;
+            case TAC_LESS:
+                fprintf(fout,
+                "## TAC LESS\n"
+                    "\tmovl    _%s%s(%%rip), %%eax\n"
+                    "\tcmpl    _%s%s(%%rip), %%eax\n"
+                    "\tsetl    %%al\n"
+                    "\tmovzbl  %%al, %%eax\n"
+                    "\tmovl    %%eax, _%s%s(%%rip)\n\n", getTacStrDataType(tac->op1->dataType), tac->op1->text, getTacStrDataType(tac->op2->dataType), tac->op2->text, getTacStrDataType(tac->res->dataType), tac->res->text);
+                break;
+            case TAC_GE:
+                fprintf(fout,
+                "## TAC GE\n"
+                    "\tmovl    _%s%s(%%rip), %%eax\n"
+                    "\tcmpl    _%s%s(%%rip), %%eax\n"
+                    "\tsetge    %%al\n"
+                    "\tmovzbl  %%al, %%eax\n"
+                    "\tmovl    %%eax, _%s%s(%%rip)\n\n", getTacStrDataType(tac->op1->dataType), tac->op1->text, getTacStrDataType(tac->op2->dataType), tac->op2->text, getTacStrDataType(tac->res->dataType), tac->res->text);
+                break;
+            case TAC_LE:
+                fprintf(fout,
+                "## TAC LE\n"
+                    "\tmovl    _%s%s(%%rip), %%eax\n"
+                    "\tcmpl    _%s%s(%%rip), %%eax\n"
+                    "\tsetle    %%al\n"
+                    "\tmovzbl  %%al, %%eax\n"
+                    "\tmovl    %%eax, _%s%s(%%rip)\n\n", getTacStrDataType(tac->op1->dataType), tac->op1->text, getTacStrDataType(tac->op2->dataType), tac->op2->text, getTacStrDataType(tac->res->dataType), tac->res->text);
+                break;
+            case TAC_EQ:
+                fprintf(fout,
+                "## TAC EQ\n"
+                    "\tmovl    _%s%s(%%rip), %%eax\n"
+                    "\tcmpl    _%s%s(%%rip), %%eax\n"
+                    "\tsete    %%al\n"
+                    "\tmovzbl  %%al, %%eax\n"
+                    "\tmovl    %%eax, _%s%s(%%rip)\n\n", getTacStrDataType(tac->op1->dataType), tac->op1->text, getTacStrDataType(tac->op2->dataType), tac->op2->text, getTacStrDataType(tac->res->dataType), tac->res->text);
+                break;
+            case TAC_DIF:
+                fprintf(fout,
+                "## TAC DIF\n"
+                    "\tmovl    $%s, %%eax\n"
+                    "\tcmpl    $%s, %%eax\n"
+                    "\tsetne    %%al\n"
+                    "\tmovzbl  %%al, %%eax\n"
+                    "\tmovl    %%eax, _%s%s(%%rip)\n"
+                    "\tmovl    $0, _%%eax\n\n", tac->op1->text, tac->op2->text, getTacStrDataType(tac->res->dataType), tac->res->text);
+                break;
+            case TAC_AND:
+                ++jumpFalseCount;
+                ++jumpEndCount;
+
+                fprintf(fout,
+                "## TAC AND\n"
+                    "\tmovl    $%d, %%eax\n"
+                    "\ttestl   %%eax, %%eax\n"
+                    "\tje      .Lfalse%d\n"
+                    "\tmovl    $%d, %%eax\n"
+                    "\ttestl   %%eax, %%eax\n"
+                    "\tje      .Lfalse%d\n"
+                    "\tmovl    $1, %%eax\n"
+                    "\tjmp     .Lend%d\n"
+                ".Lfalse%d:\n"
+                    "\tmovl    $0, %%eax\n"
+                ".Lend%d:\n"
+                    "\tmovl    %%eax, _%s%s(%%rip)\n\n", strcmp(tac->op1->text,"true") ? 0:1, jumpFalseCount, strcmp(tac->op2->text,"true") ? 0:1, jumpFalseCount, jumpEndCount, jumpFalseCount, jumpEndCount, getTacStrDataType(tac->res->dataType), tac->res->text);
+                break;
+            case TAC_OR:
+                ++jumpTrueCount;
+                ++jumpEndCount;
+
+                fprintf(fout,
+                "## TAC OR\n"
+                    "\tmovl    $%d, %%eax\n"
+                    "\ttestl   %%eax, %%eax\n"
+                    "\tjnz     .Ltrue%d\n"
+                    "\tmovl    $%d, %%eax\n"
+                    "\tjmp     .Lend%d\n"
+                ".Ltrue%d:\n"
+                    "\tmovl    $1, %%eax\n"
+                ".Lend%d:\n"
+                    "\tmovl    %%eax, _%s%s(%%rip)\n\n", strcmp(tac->op1->text,"true") ? 0:1, jumpTrueCount, strcmp(tac->op2->text,"true") ? 0:1, jumpEndCount, jumpTrueCount, jumpEndCount, getTacStrDataType(tac->res->dataType), tac->res->text);
+                break;
+            case TAC_NOT:
+                fprintf(fout,
+                "## TAC NOT\n"
+                    "\tmovl    _BOOL%s(%%rip), %%eax\n"
+                    "\txorl    $1, %%eax\n"
+                    "\tmovl    %%eax, _%s%s(%%rip)\n\n", tac->op1->text, getTacStrDataType(tac->res->dataType), tac->res->text);
+                break;
+            case TAC_LABEL:
+                fprintf(fout, 
+                "## TAC LABEL\n"
+                ".%s:\n\n", tac->res->text);
+                break;
+            case TAC_JUMP:
+                fprintf(fout, 
+                "## TAC JUMP\n"
+                "\tjmp .%s\n\n", tac->res->text);
+                break;
+            case TAC_JFALSE:
+                fprintf(fout,
+                "## TAC JFALSE\n" 
+                    "\tmovl _%s%s(%%rip), %%eax\n"
+                    "\ttestl %%eax, %%eax\n"
+                    "\tjz   .%s\n\n", getTacStrDataType(tac->op1->dataType), tac->op1->text, tac->res->text);
+                break;
         }
     }
 

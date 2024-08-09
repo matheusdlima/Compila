@@ -11,25 +11,45 @@ _main:                                  ## @main
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
 	xorl	%eax, %eax
-	movq	_b@GOTPCREL(%rip), %rcx
-	movl	_vec+8(%rip), %edx
-	movl	%edx, (%rcx)
+	movl	_c2(%rip), %esi
+	movslq	_i(%rip), %rdx
+	leaq	_v(%rip), %rcx
+	movl	%esi, (%rcx,%rdx,4)
 	popq	%rbp
 	retq
 	.cfi_endproc
                                         ## -- End function
 	.section	__DATA,__data
-	.globl	_vec                            ## @vec
-	.p2align	4
-_vec:
-	.long	1                               ## 0x1
+	.globl	_b                              ## @b
+	.p2align	2
+_b:
+	.long	0x40000000                      ## float 2
+
+	.globl	_c                              ## @c
+	.p2align	2
+_c:
+	.long	0x40a00000                      ## float 5
+
+	.globl	_b2                             ## @b2
+	.p2align	2
+_b2:
 	.long	2                               ## 0x2
-	.long	3                               ## 0x3
-	.long	4                               ## 0x4
+
+	.globl	_c2                             ## @c2
+	.p2align	2
+_c2:
 	.long	5                               ## 0x5
 
-	.comm	_b,4,2                          ## @b
-	.comm	_c,4,2                          ## @c
-	.comm	_d,1,0                          ## @d
-	.comm	_f,1,0                          ## @f
+	.globl	_v                              ## @v
+	.p2align	2
+_v:
+	.long	1                               ## 0x1
+	.long	2                               ## 0x2
+
+	.globl	_i                              ## @i
+	.p2align	2
+_i:
+	.long	1                               ## 0x1
+
+	.comm	_a,4,2                          ## @a
 .subsections_via_symbols
