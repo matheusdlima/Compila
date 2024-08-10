@@ -1,8 +1,8 @@
 #  Etapa 6 - Compiladores 2024/1
 #      Autor: Matheus Lima 
 
-etapa6: y.tab.o lex.yy.o main.o hash.o ast.o semantic.o tacs.o asm.o
-	gcc main.o lex.yy.o y.tab.o hash.o ast.o semantic.o tacs.o asm.o -o etapa6
+etapa6: y.tab.o lex.yy.o main.o hash.o ast.o semantic.o tacs.o asm.o hashFunc.o
+	gcc main.o lex.yy.o y.tab.o hash.o ast.o semantic.o tacs.o asm.o hashFunc.o -o etapa6
 main.o: main.c
 	gcc -c main.c
 semantic.o: semantic.c
@@ -13,6 +13,8 @@ tacs.o: tacs.c
 	gcc -c tacs.c
 ast.o:	ast.c
 	gcc -c ast.c
+hashFunc.o: hashFunc.c
+	gcc -c hashFunc.c
 asm.o:	asm.c
 	gcc -c asm.c
 y.tab.o: y.tab.c

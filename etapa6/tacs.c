@@ -222,6 +222,7 @@ TAC* generateCode(AST *node, HASH_NODE *currentWhileLabel){
         case AST_ARGSTAIL:
             result = tacJoin(code[1], tacJoin(code[0], tacCreate(TAC_ARG, code[0]?code[0]->res:0, 0, 0)));
             break;
+        case AST_PARAM: return tacJoin(tacCreate(TAC_PARAM, node->symbol, 0, 0), code[1]);
         case AST_DECFUNC:
             result = tacJoin(tacJoin(tacJoin(tacCreate(TAC_BEGINFUN, tacCreate(TAC_SYMBOL, node->symbol, 0, 0)->res, 0, 0), code[1]), code[2]), tacCreate(TAC_ENDFUN, tacCreate(TAC_SYMBOL, node->symbol, 0, 0)->res, 0, 0));
             break;

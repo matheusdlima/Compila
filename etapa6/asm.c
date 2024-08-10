@@ -2,13 +2,17 @@
 //      Autor: Matheus Lima 
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "asm.h"
 #include "semantic.h"
 #include "ast.h"
 #include "hash.h"
+#include "hashFunc.h"
 
 char* getTacStrDataType(int dataType);
+void generateAssemblyForCall(FILE *fout, const char *functionName, int numArgs, char *args[]);
+const char *argRegs[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d", "%r13d", "%r12d", "%r15d", "%r14d", "%ebx", "%r11d", "%r10d", "%eax"};
 
 // ASM GENERATION
 TAC* tacReverse(TAC *tac){
@@ -88,10 +92,19 @@ void setVariablesValues(FILE *fout, AST* node){
 
 void generateASM(TAC* first, AST *root){
     FILE *fout;
+    
     int jumpFalseCount = 0;
     int jumpTrueCount = 0;
     int jumpEndCount = 0;
 
+    char strReadFunc[20];
+
+    hashFuncInit();
+    int argIndex = 0;
+    char * argList[100];
+    int funcCallList[500];
+    int funcCallIndex = 0;
+    
     fout = fopen("out.s", "w");
 
     // Init
@@ -99,6 +112,8 @@ void generateASM(TAC* first, AST *root){
     ".section	__TEXT,__cstring,cstring_literals\n"
     "printIntStr: .asciz	\"%%d\\n\"\n"
     "printFloatStr: .asciz	\"%%f\\n\"\n"
+    "readIntStr: .asciz	\"%%d\"\n"
+    "readFloatStr: .asciz	\"%%f\"\n"
 	"printStr: .asciz	\"%%s\\n\"\n");
     setLitStrings(fout);
     fprintf(fout, "\n.section	__TEXT,__text,regular,pure_instructions\n\n");
@@ -107,7 +122,8 @@ void generateASM(TAC* first, AST *root){
 
     for (TAC* tac = first; tac; tac = tac->next){
         switch (tac->type){
-            case TAC_BEGINFUN: 
+            case TAC_BEGINFUN:
+                hashFuncInsert(tac->res->text);
                 fprintf(fout, 
                 "## TAC_BEGINFUN\n"                     
                     "\t.globl	_%s\n"
@@ -117,7 +133,13 @@ void generateASM(TAC* first, AST *root){
                 break;
             case TAC_ENDFUN: 
                 fprintf(fout, 
-                "## TAC_ENDFUN\n"
+                "## TAC_ENDFUN\n");
+                
+                for (int i = 0; i < funcCallIndex; i++){
+                    fprintf(fout, 
+                        "\taddq	$%d, %%rsp\n", funcCallList[i]);
+                }
+                    fprintf(fout,
                     "\tpopq	%%rbp\n"
                     "\tretq\n\n");
                 break;
@@ -147,8 +169,7 @@ void generateASM(TAC* first, AST *root){
                         "\tcvtss2sd	%%xmm0, %%xmm0\n"
                         "\tleaq	printFloatStr(%%rip), %%rdi\n"
                         "\tmovb	$1, %%al\n"
-                        "\tcallq	_printf\n"
-                        "\txorl	%%eax, %%eax\n\n", tac->res->text);
+                        "\tcallq	_printf\n\n", tac->res->text);
                 } else if (tac->res->dataType == DATATYPE_BOOL){
                     fprintf(fout, 
                     "## TAC_PRINTBOOL\n"
@@ -157,16 +178,14 @@ void generateASM(TAC* first, AST *root){
                         "\tmovzbl	%%al, %%esi\n"
                         "\tleaq	printIntStr(%%rip), %%rdi\n"
                         "\tmovb	$0, %%al\n"
-                        "\tcallq	_printf\n"
-                        "\txorl	%%eax, %%eax\n\n", tac->res->text);
+                        "\tcallq	_printf\n\n", tac->res->text);
                 } else if (tac->res->dataType == DATATYPE_STRING){
                     fprintf(fout, 
                     "## TAC_PRINTSTR\n"
                         "\tleaq	printStr(%%rip), %%rdi\n"
                         "\tleaq	_STRING%lu(%%rip), %%rsi\n"
                         "\tmovb	$0, %%al\n"
-                        "\tcallq	_printf\n"
-                        "\txorl	%%eax, %%eax\n\n", hashString(tac->res->text));
+                        "\tcallq	_printf\n\n", hashString(tac->res->text));
                 }
                 break;
             case TAC_VEC: 
@@ -188,7 +207,7 @@ void generateASM(TAC* first, AST *root){
             case TAC_COPY:
                 fprintf(fout, 
                     "## TAC_COPY\n"
-                        "xorl	%%eax, %%eax\n"
+                        "\txorl	%%eax, %%eax\n"
                         "\tmovq	_%s%s@GOTPCREL(%%rip), %%rcx\n"
                         "\tmovl	_%s%s(%%rip), %%edx\n"
                         "\tmovl	%%edx, (%%rcx)\n\n", getTacStrDataType(tac->res->dataType), tac->res->text, getTacStrDataType(tac->op1->dataType),tac->op1->text);
@@ -250,7 +269,7 @@ void generateASM(TAC* first, AST *root){
                             "\tmovl	%%edx, (%%rcx)\n\n", getTacStrDataType(tac->res->dataType), tac->res->text, getTacStrDataType(tac->op1->dataType), tac->op1->text, getTacStrDataType(tac->op2->dataType), tac->op2->text);
                 }
                 break;
-                case TAC_DIV:
+            case TAC_DIV:
                 if (tac->res->dataType == DATATYPE_REAL){
                     fprintf(fout,
                     "## TAC_DIV"
@@ -386,8 +405,50 @@ void generateASM(TAC* first, AST *root){
                     "\ttestl %%eax, %%eax\n"
                     "\tjz   .%s\n\n", getTacStrDataType(tac->op1->dataType), tac->op1->text, tac->res->text);
                 break;
+            case TAC_RETURN:
+                fprintf(fout, 
+                "## TAC RETURN\n"
+                    "\tmovl	_%s%s(%%rip), %%eax\n\n", getTacStrDataType(tac->res->dataType), tac->res->text);
+                break;
+            case TAC_READ:
+                if (tac->res->dataType == DATATYPE_REAL){
+                    strcpy(strReadFunc, "readFloatStr");
+                } else {
+                    strcpy(strReadFunc, "readIntStr");
+                }
+                fprintf(fout,
+                    "## TAC READ\n"
+                        "\tleaq	%s(%%rip), %%rdi\n"
+                        "\tleaq	_%s%s(%%rip), %%rsi\n"
+                        "\tmovl	$0, %%eax\n"
+                        "\tcallq	_scanf\n\n", strReadFunc, getTacStrDataType(tac->res->dataType), tac->res->text);
+                break;
+            case TAC_ARG:
+                argList[argIndex] = (char*) calloc(1, sizeof(tac->res->text));
+                
+                strcpy(argList[argIndex], getTacStrDataType(tac->res->dataType));
+                strcat(argList[argIndex], tac->res->text);
+                ++argIndex;
+
+                break;
+            case TAC_CALL:
+                // funcCallList[funcCallIndex] = (argIndex-1)*8+16;
+                // fprintf(fout, "\tsubq	$%d, %%rsp\n", funcCallList[funcCallIndex]);
+                // funcCallIndex++;
+
+                // for(int i = 0; i < argIndex; i++){
+                //     fprintf(fout, "\tmovl _%s(%%rip), %d(%%rsp)\n", argList[i], i*8);
+                // }
+                // fprintf(fout, "\tcallq	%s\n\n" , tac->op1->text);
+                // argIndex = 0;
+                // Número de argumentos da função  
+                
+                generateAssemblyForCall(fout, tac->op1->text, argIndex, argList);
+
+                break;
         }
     }
+
 
     // Data variables
     fprintf(fout,
@@ -399,4 +460,43 @@ void generateASM(TAC* first, AST *root){
 
     // Each tac
     fclose(fout);
+}
+
+void generateAssemblyForCall(FILE *fout, const char *functionName, int numArgs, char *args[]) {
+    int i;
+    int stack_offset = 44 + (numArgs-13)*4;
+    
+    // Para armazenar os argumentos extras que não cabem nos registradores
+    char *stackSpills[numArgs > 14 ? numArgs - 14: 0];
+
+    fprintf(fout, "## TAC CALL\n");
+    for (i = 0; i < numArgs; i++) {
+        if (i < 14) {
+            // Até 6 argumentos podem ser movidos diretamente para registradores
+            fprintf(fout, "\tmovl\t_%s(%%rip), %s\n", args[i], argRegs[i]);
+        } else {
+            // Armazenar o argumento extra temporariamente na pilha
+            fprintf(fout, "\tmovl\t_%s(%%rip), %%eax\n", args[i]);
+            fprintf(fout, "\tmovl\t%%eax, -%d(%%rbp)\t\t## 4-byte Spill\n", stack_offset);
+            
+            stackSpills[i - 14] = (char *)malloc(40);
+            sprintf(stackSpills[i - 14], "\tmovl\t-%d(%%rbp), %%eax\t\t## 4-byte Reload\n", stack_offset);
+            stack_offset -= 4;
+        }
+    }
+
+    // Move argumentos da pilha para os registradores, ou diretamente para o espaço da pilha
+    for (i = 0; i < numArgs - 14; i++) {
+        fprintf(fout, "%s", stackSpills[i]);
+        fprintf(fout, "\tmovl\t%%eax, %d(%%rsp)\n", i * 8);
+        free(stackSpills[i]);
+    }
+
+    // Adiciona os últimos argumentos nos registradores à pilha
+    for (i = 0; i < 14 && i < numArgs; i++) {
+        fprintf(fout, "\tmovl\t%s, %d(%%rsp)\n", argRegs[i], i * 8);
+    }
+
+    // Chamada da função
+    fprintf(fout, "\tcall\t_%s\n\n", functionName);
 }
