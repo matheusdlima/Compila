@@ -34,7 +34,6 @@
 #define TAC_PRINT     25
 #define TAC_RETURN    26
 #define TAC_JUMP      27
-#define TAC_PARAM     28
 
 typedef struct tac_node{
     int type;

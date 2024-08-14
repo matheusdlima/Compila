@@ -8,11 +8,13 @@
 #include "semantic.h"
 #include "ast.h"
 #include "hash.h"
-#include "hashFunc.h"
 
 char* getTacStrDataType(int dataType);
-void generateAssemblyForCall(FILE *fout, const char *functionName, int numArgs, char *args[]);
+void generateAssemblyForCall(FILE *fout, const char *functionName, int numArgs, char *args[], char *attVar);
+void generateArgumentReceival(int numArgs);
+
 const char *argRegs[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d", "%r13d", "%r12d", "%r15d", "%r14d", "%ebx", "%r11d", "%r10d", "%eax"};
+const char *preArgRegs[] = {"%rbx", "%r14", "%r15", "%r12", "%r13"};
 
 // ASM GENERATION
 TAC* tacReverse(TAC *tac){
@@ -57,17 +59,7 @@ void setVariablesValues(FILE *fout, AST* node){
 
 			fprintf(fout, "\t.globl _CHAR%s\n_CHAR%s:\t.long	%d\n", node->symbol->text, node->symbol->text, charData);
 		}
-	} 
-    // else if (node->type == AST_PARAM){  // Params are global variables!
-    	
-    //     if(node->son[0]->type == AST_TPFLOAT) {
-	// 		fprintf(fout, "\t.float	0\n");
-	// 	}
-	// 	else {
-	// 		fprintf(fout, "\t.long	0\n");
-	// 	}
-    //} 
-    else if(node->type == AST_DECVEC){
+	} else if(node->type == AST_DECVEC){
         if (node->son[2]){
             fprintf(fout,
             "\t.globl\t_%s%s\n"
@@ -99,7 +91,6 @@ void generateASM(TAC* first, AST *root){
 
     char strReadFunc[20];
 
-    hashFuncInit();
     int argIndex = 0;
     char * argList[100];
     int funcCallList[500];
@@ -123,7 +114,6 @@ void generateASM(TAC* first, AST *root){
     for (TAC* tac = first; tac; tac = tac->next){
         switch (tac->type){
             case TAC_BEGINFUN:
-                hashFuncInsert(tac->res->text);
                 fprintf(fout, 
                 "## TAC_BEGINFUN\n"                     
                     "\t.globl	_%s\n"
@@ -432,18 +422,9 @@ void generateASM(TAC* first, AST *root){
 
                 break;
             case TAC_CALL:
-                // funcCallList[funcCallIndex] = (argIndex-1)*8+16;
-                // fprintf(fout, "\tsubq	$%d, %%rsp\n", funcCallList[funcCallIndex]);
-                // funcCallIndex++;
+                generateAssemblyForCall(fout, tac->op1->text, argIndex, argList, strcat(getTacStrDataType(tac->res->dataType), tac->res->text));
 
-                // for(int i = 0; i < argIndex; i++){
-                //     fprintf(fout, "\tmovl _%s(%%rip), %d(%%rsp)\n", argList[i], i*8);
-                // }
-                // fprintf(fout, "\tcallq	%s\n\n" , tac->op1->text);
-                // argIndex = 0;
-                // Número de argumentos da função  
                 
-                generateAssemblyForCall(fout, tac->op1->text, argIndex, argList);
 
                 break;
         }
@@ -462,41 +443,62 @@ void generateASM(TAC* first, AST *root){
     fclose(fout);
 }
 
-void generateAssemblyForCall(FILE *fout, const char *functionName, int numArgs, char *args[]) {
+void generateAssemblyForCall(FILE *fout, const char *functionName, int numArgs, char *args[], char *attVar) {
     int i;
-    int stack_offset = 44 + (numArgs-13)*4;
+    int lastIndex;
+    int stack_offset = 44 + (numArgs-14)*4;
     
     // Para armazenar os argumentos extras que não cabem nos registradores
     char *stackSpills[numArgs > 14 ? numArgs - 14: 0];
 
     fprintf(fout, "## TAC CALL\n");
-    for (i = 0; i < numArgs; i++) {
-        if (i < 14) {
-            // Até 6 argumentos podem ser movidos diretamente para registradores
-            fprintf(fout, "\tmovl\t_%s(%%rip), %s\n", args[i], argRegs[i]);
-        } else {
-            // Armazenar o argumento extra temporariamente na pilha
-            fprintf(fout, "\tmovl\t_%s(%%rip), %%eax\n", args[i]);
-            fprintf(fout, "\tmovl\t%%eax, -%d(%%rbp)\t\t## 4-byte Spill\n", stack_offset);
-            
-            stackSpills[i - 14] = (char *)malloc(40);
-            sprintf(stackSpills[i - 14], "\tmovl\t-%d(%%rbp), %%eax\t\t## 4-byte Reload\n", stack_offset);
-            stack_offset -= 4;
+
+    if (numArgs > 9){
+        for (i = 0; i < numArgs - 9 && i < 5; i++){
+            fprintf(fout, "\tpushq\t%s\n", preArgRegs[i]);
         }
     }
 
-    // Move argumentos da pilha para os registradores, ou diretamente para o espaço da pilha
-    for (i = 0; i < numArgs - 14; i++) {
-        fprintf(fout, "%s", stackSpills[i]);
-        fprintf(fout, "\tmovl\t%%eax, %d(%%rsp)\n", i * 8);
-        free(stackSpills[i]);
-    }
+    fprintf(fout, "\tsubq\t$%d, %%rsp\n", 8*(numArgs-1));
+    
+    if (numArgs > 14){
+        for (i = 0; i < numArgs; i++) {
+            if (i < 13) {
+                // Até 13 argumentos podem ser movidos diretamente para registradores
+                fprintf(fout, "\tmovl\t_%s(%%rip), %s\n", args[i], argRegs[i]);
+            } else {
+                // Armazenar o argumento extra temporariamente na pilha
+                fprintf(fout, "\tmovl\t_%s(%%rip), %%eax\n", args[i]);
+                fprintf(fout, "\tmovl\t%%eax, -%d(%%rbp)\t\t## 4-byte Spill\n", stack_offset);
+                
+                stackSpills[i - 13] = (char *)malloc(40);
+                sprintf(stackSpills[i - 13], "\tmovl\t-%d(%%rbp), %%eax\t\t## 4-byte Reload\n", stack_offset);
+                stack_offset -= 4;
+            }
+        }
 
-    // Adiciona os últimos argumentos nos registradores à pilha
-    for (i = 0; i < 14 && i < numArgs; i++) {
-        fprintf(fout, "\tmovl\t%s, %d(%%rsp)\n", argRegs[i], i * 8);
+        // Move argumentos da pilha para os registradores, ou diretamente para o espaço da pilha
+        for (i = 0; i < numArgs - 13; i++) {
+            fprintf(fout, "%s", stackSpills[i]);
+            if ((i+1) != (numArgs - 13)){
+                fprintf(fout, "\tmovl\t%%eax, %d(%%rsp)\n", i * 8);
+            }
+            free(stackSpills[i]);
+        }
+        lastIndex = i - 1;
+        // Adiciona os últimos argumentos nos registradores à pilha
+        for (i = 6; i < 14 && i < numArgs; i++) {
+            fprintf(fout, "\tmovl\t%s, %d(%%rsp)\n", argRegs[i], lastIndex * 8);
+            ++lastIndex;
+        }
+    } else {
+        for (i = 0; i < numArgs; i++) {
+            // Até 6 argumentos podem ser movidos diretamente para registradores
+            fprintf(fout, "\tmovl\t_%s(%%rip), %s\n", args[i], argRegs[i]);
+        }
     }
 
     // Chamada da função
-    fprintf(fout, "\tcall\t_%s\n\n", functionName);
+    fprintf(fout, "\tcall\t_%s\n"
+                  "\tmovl\t%%eax, _%s(%%rip)\n\n", functionName, attVar);
 }

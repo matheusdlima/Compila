@@ -16,7 +16,7 @@ int func(int a, int b, int c, int d, int f, int a2, int b2, int c2, int d2, int 
 
 int main (){
     
-    b2 = func(c2, c2, c2, c2, c2, c2, c2, c2, c2, c2, b2, c2, c2, c2, c2, c2, b2, c2, c2, c2, c2, b2);
+    b2 = func(c2, c2, c2, c2, c2, c2, c2, c2, c2, c2, b2, c2, c2, c2, c2, c2, b2, c2, c2, c2, c2, c2);
 
     printf("%d\n", b2);
 }

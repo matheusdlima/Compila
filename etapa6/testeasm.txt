@@ -12,7 +12,7 @@ float f:2.5;		// 0.0 .0 0. are all allowed
 
 int main ()
   {
-  number = incn(8,9, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i);
+  //number = incn(8,9, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i);
   number = v[2];
   //v[incn(2,1)] = 55;
   print "digite o valor de d: \n";
@@ -37,7 +37,7 @@ int main ()
   return 0;
   }
 
-int incn (int x, int n, int c2, int d2, int f2, int a2, int b2, int c3, int d3, int f3, int g, int h, int i2, int j, int k, int f1, int g1, int h1, int i1, int j1, int k1 )
+int incn (int x, int n, int c2, int d2, int f2, int a2, int b2, int c3, int d3, int f3, int g, int h, int i2, int j, int k, int f1, int g1, int h1, int i1, int j1, int k1, int kkkk )
   {
   //return n + x;
   }

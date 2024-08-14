@@ -88,7 +88,7 @@ _main:                                  ## @main
 	movl	_c2(%rip), %ebx
 	movl	_c2(%rip), %r11d
 	movl	_c2(%rip), %r10d
-	movl	_b2(%rip), %eax
+	movl	_c2(%rip), %eax
 	movl	%eax, -44(%rbp)                 ## 4-byte Spill
 	movl	-76(%rbp), %eax                 ## 4-byte Reload
 	movl	%eax, (%rsp)
