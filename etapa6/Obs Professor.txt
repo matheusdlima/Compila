@@ -1,0 +1,1 @@
+Professor, não consegui fazer apenas a parte de receber os argumentos de função :/ então todos os casos que envolvem chamar funções não irão funcionar, mas o envio dos argumentos está feito. Agradeço desde já a compreensão.

@@ -105,7 +105,7 @@ void generateASM(TAC* first, AST *root){
     "printFloatStr: .asciz	\"%%f\\n\"\n"
     "readIntStr: .asciz	\"%%d\"\n"
     "readFloatStr: .asciz	\"%%f\"\n"
-	"printStr: .asciz	\"%%s\\n\"\n");
+	"printStr: .asciz	\"%%s\"\n");
     setLitStrings(fout);
     fprintf(fout, "\n.section	__TEXT,__text,regular,pure_instructions\n\n");
 
@@ -120,6 +120,7 @@ void generateASM(TAC* first, AST *root){
                 "_%s:\n"                  
                     "\tpushq	%%rbp\n"
                     "\tmovq	%%rsp, %%rbp\n\n", tac->res->text, tac->res->text);
+                funcCallIndex = 0;
                 break;
             case TAC_ENDFUN: 
                 fprintf(fout, 
@@ -205,7 +206,7 @@ void generateASM(TAC* first, AST *root){
             case TAC_ADD:
                 if (tac->res->dataType == DATATYPE_REAL){
                     fprintf(fout,
-                    "## TAC_ADD"
+                    "## TAC_ADD\n"
                         "\txorl	%%eax, %%eax\n"
                         "\tmovq	_%s%s@GOTPCREL(%%rip), %%rcx\n"
                         "\tmovss	_%s%s(%%rip), %%xmm0\n"
@@ -423,8 +424,8 @@ void generateASM(TAC* first, AST *root){
                 break;
             case TAC_CALL:
                 generateAssemblyForCall(fout, tac->op1->text, argIndex, argList, strcat(getTacStrDataType(tac->res->dataType), tac->res->text));
-
-                
+                funcCallList[funcCallIndex] = 8*(argIndex-1);
+                funcCallIndex++;
 
                 break;
         }

@@ -26,10 +26,18 @@ int main ()
   f = i * 9.;
   f = 5. / 5;
 
-  while (i<10)
+  v[2] = 52;
+  print int v[2];
+  //print float f;
+  //print char 'G';
+ // print int number;
+
+  while (i>10)
     {
-    i = incn(i,1);
-    d = incn(d,d);
+    print "i = ";
+    print int i;
+
+    i = i - 1;
     }
 
   if (~b)

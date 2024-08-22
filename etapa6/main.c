@@ -21,8 +21,8 @@ int main (int argc, char **argv){
     int token;
     FILE *output;
 
-	if (argc < 2){
-		fprintf(stderr, "Call: ./etapa4 input.txt output.txt\n");
+	if (argc < 3){
+		fprintf(stderr, "Call: ./etapa6 input.txt output.txt\n");
 		exit(1);
     }
 
@@ -31,25 +31,25 @@ int main (int argc, char **argv){
 		exit(2);
     }
 
-    // if ((output = fopen(argv[2], "w+")) == 0){
-    //     fprintf(stderr, "Fail to open file %s\n", argv[2]);
-	// 	exit(2);
-    // }
+    if ((output = fopen(argv[2], "w+")) == 0){
+        fprintf(stderr, "Fail to open file %s\n", argv[2]);
+		exit(2);
+    }
 
     initMe();
 
     yyparse();
     
-    // printf("\nPrinting HashTable:\n");
-    // hashPrint();
+    printf("\nPrinting HashTable:\n");
+    hashPrint();
 
-    // fprintf(stderr, "\nUncompiling!\n");
+    fprintf(stderr, "\nUncompiling!\n");
 
-	// astUncompile(getAST(), output);
+	astUncompile(getAST(), output);
 
-    // fprintf(stderr, "Uncompiling finished!\n");
+    fprintf(stderr, "Uncompiling finished!\n");
 
-	// fclose(output);
+	fclose(output);
 
     checkSemanticErrors();
     
